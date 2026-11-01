@@ -124,7 +124,7 @@ def apple_tool_environment(original):
 def signing_requirement(team):
     if not re.fullmatch(r'[A-Z0-9]{10}', team):
         raise ValueError('署名の Team ID が不正です。')
-    return ('anchor apple generic and certificate leaf[subject.OU] = "' + team +
+    return ('=anchor apple generic and certificate leaf[subject.OU] = "' + team +
             '" and certificate leaf[field.1.2.840.113635.100.6.1.4] exists')
 
 
