@@ -78,3 +78,13 @@ TestFlight の各ビルドの有効期間はアップロードから90日。継�
 - Xcode がローカル SwiftPM package に作る `.swiftpm/xcode/xcuserdata/*.xcuserdatad/xcschemes/xcschememanagement.plist` は実行されない UI 設定なのでハッシュ検査から除外する。それ以外の全ファイルは従来どおり照合し、`.xcscheme` やソース改変を見逃さない回帰試験を追加した。
 
 - 更新ビルド 0.1.0 (8) の実アーカイブ・配布署名・アップロードと、Apple 処理後の自動配信を確認した。追加の暗号化質問なしで、初回 (5) と同じ「個人用」グループの「テスト中」になった。アプリを削除・別登録する処理は行っていない。
+
+## GUI のサインインと CLI の診断（2026-11-01〜02）
+
+ビルド12の配信準備中、`xcodebuild` が `No Accounts` を返し、旧 `DVTDeveloperAccountManagerAppleIDLists` が空でも、起動中の Xcode の Apple Accounts にはアカウントと有効な Developer Team が存在した。GUI から実際に cloud-managed Apple Distribution 署名も成功した。CLI のエラーや旧設定項目だけで「未サインイン」と断定しない。GUI の実状態と署名処理を別々に確認する。
+
+GUI の Organizer は署名なしの中間アーカイブをそのまま配信できず、`No Team Found in Archive` になる。アーカイブの Team メタデータだけでは解消しない。既存の Apple Development 証明書で作業用コピーに実際の中間署名を付け、GUI が最終的な Apple Distribution 署名とプロファイルを適用するところまで確認した。中間署名は実機配信用とは扱わない。
+
+ビルド12では、GUI の配布署名後に IPA 作成の `rsync` 子プロセスが Homebrew 版を選び、前述の `Copy failed` が再現した。署名済みの Payload / SwiftSupport を私有の `build/Distribution/Recovered/Root` に保管し、Apple Distribution の証明書チェーン、設定済み Team、アプリ識別子、`get-task-allow=false` と既存アプリの識別子の一致を strict 検証した。ビルド番号12も確認した。IPA 作成・アップロードは未完了であり、この段階を TestFlight 配信完了とは扱わない。
+
+Xcode をシステムツール優先の PATH で起動し直す準備では、ログインセッションの起動環境を一時的に変更し、起動直後に以前の値へ戻した。GUI での IPA 作成と Apple 側の配信確認は後続の検証事項。アカウントの削除、Keychain の認証情報の消去、秘密鍵の書き出しは行っていない。
