@@ -6,7 +6,8 @@
 
 | 対象 | 結果・内容 |
 | --- | --- |
-| SwiftPM | 19件。通常実行は18件成功、実推論 API の1件は環境変数なしでは明示 skip。API 指定時の別実行でその1件も成功 |
+| SwiftPM | 22件。通常実行は21件成功、実推論 API の1件は環境変数なしでは明示 skip。API 指定時の別実行でその1件も成功 |
+| iOS 表示単体試験 | 3件。実 UIFont / CoreText / SwiftTerm の文字幅・行高・列数、変換パネルの非表示と長文保持、低い画面での候補操作領域 |
 | 実 OpenSSH | 一時 loopback sshd。未知ホスト拒否、暗号化 Ed25519、RSA 3072 + SHA-256、実 ProxyJump、20回の日本語送信と連続 PTY リサイズ、SFTP バイト一致、シェル引用、転送 agent で実 OpenSSH の二段認証、正常 EOF |
 | 実推論 API | 既存 llama-swap / Qwen3.5-2B 系モデルの OpenAI 互換 API に実 HTTP 接続。「現在のディレクトリ」の依頼から `pwd` を含む単一行コマンドを生成。Ollama 応答形式と危険な改行の拒否は単体試験 |
 | iPhone UI | 独立した一時 iPhone simulator で5件。プロフィール保存・再起動、実 Keychain 鍵生成・公開鍵表示、実ファイルの保存・再読込・検索、独自キーボードの日本語変換・確定・回転・記号、実 SSH パスワード・ホスト鍵確認・PTY コマンド実行 |
@@ -50,6 +51,10 @@ UI は再起動をまたぐ保存を実際に検証する。繰り返し実行�
 ## UI 記録
 
 専用の試験データで撮影した画面: [ローカル作業](screenshots/local.png)、[日本語キーボード](screenshots/keyboard.png)、[実 SSH 接続](screenshots/ssh.png)。
+
+字間の調整と、入力中だけ表示する変換パネルの設計・検証は [文字密度と日本語入力](compact-input.md) を参照。
+
+同日の追加検証で、SwiftPM 22件（21成功、実AI 1件は環境未指定でskip）、配信・依存監査14件、iOS表示単体3件とiPhone UI 5件が成功した。実辞書による変換中に端末・キーの位置が動かず、縦横の候補操作と確定、横画面の設定メニュー、実SSHを確認。Releaseアーカイブ12の作成も成功した。最終UI結果は `Test-TerminalKun2-2026.11.01_23-21-31-+0900.xcresult`。
 
 ## TestFlight 配信準備の追加検証
 

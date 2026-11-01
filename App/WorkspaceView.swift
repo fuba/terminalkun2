@@ -6,6 +6,7 @@ import TerminalRenderer
 
 struct WorkspaceView: View {
     @EnvironmentObject var store: AppStore
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -16,6 +17,7 @@ struct WorkspaceView: View {
             .background(Color(uiColor: .systemBackground))
             .navigationTitle("terminalkun2")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(verticalSizeClass == .compact && store.selected != nil ? .hidden : .visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button { store.sheet = .connections } label: { Image(systemName: "server.rack") }.accessibilityLabel("接続先") }
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -90,6 +92,7 @@ struct TabButton: View {
 
 struct SessionPane: View {
     @EnvironmentObject var store: AppStore
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @ObservedObject var session: TerminalSession
     @State private var showSearch = false
     @State private var query = ""
@@ -100,7 +103,7 @@ struct SessionPane: View {
     @State private var matchCount = "0/0"
     var body: some View {
         VStack(spacing: 0) {
-            metadata
+            if verticalSizeClass != .compact { metadata }
             if showSearch {
                 HStack {
                     TextField("端末内を検索", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled().onSubmit { search(false) }.accessibilityIdentifier("terminalSearch")
@@ -136,6 +139,10 @@ struct SessionPane: View {
                 Button { showSearch.toggle() } label: { Image(systemName: "magnifyingglass") }.accessibilityLabel("端末内を検索")
                 Spacer()
                 Menu {
+                    if verticalSizeClass == .compact {
+                        Button("接続先", systemImage: "server.rack") { store.sheet = .connections }
+                        Button("設定", systemImage: "gearshape") { store.sheet = .settings }
+                    }
                     Button("ファイルを送信", systemImage: "square.and.arrow.up") { importing = true }.disabled(session.state != .connected)
                     Button("音声・コマンド作成", systemImage: "mic") { store.sheet = .voice }
                     Button(session.logging ? "ログを停止" : "ログを開始", systemImage: "record.circle") { session.toggleLog() }
@@ -173,9 +180,9 @@ struct TerminalSurface: UIViewRepresentable {
     let session: TerminalSession
     let onSearch: () -> Void
     let onUpload: () -> Void
-    func makeUIView(context: Context) -> SessionTerminalView { session.terminal.onSearch = onSearch; session.terminal.onUpload = onUpload; return session.terminal }
-    func updateUIView(_ view: SessionTerminalView, context: Context) {}
-    static func dismantleUIView(_ view: SessionTerminalView, coordinator: ()) { view.resignFirstResponder() }
+    func makeUIView(context: Context) -> TerminalContainerView { session.terminal.onSearch = onSearch; session.terminal.onUpload = onUpload; return TerminalContainerView(session: session) }
+    func updateUIView(_ view: TerminalContainerView, context: Context) {}
+    static func dismantleUIView(_ view: TerminalContainerView, coordinator: ()) { view.detach() }
 }
 
 struct ShareView: UIViewControllerRepresentable {

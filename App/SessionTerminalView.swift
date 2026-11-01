@@ -5,6 +5,7 @@ import TerminalRenderer
 
 @MainActor
 final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
+    weak var compositionContainer: TerminalContainerView?
     weak var session: TerminalSession?
     var onSearch: (() -> Void)?
     var onUpload: (() -> Void)?
@@ -21,6 +22,12 @@ final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
         addGestureRecognizer(UIPinchGestureRecognizer(target: self, action: #selector(pinch(_:))))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder(); compositionContainer?.setNeedsLayout(); return result
+    }
+    override func resignFirstResponder() -> Bool {
+        let result = super.resignFirstResponder(); compositionContainer?.setNeedsLayout(); return result
+    }
     override var keyCommands: [UIKeyCommand]? {
         let commands = session?.store?.configuration.shortcuts.compactMap { binding -> UIKeyCommand? in
             guard !binding.input.isEmpty else { return nil }

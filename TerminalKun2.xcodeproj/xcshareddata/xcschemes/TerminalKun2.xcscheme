@@ -44,6 +44,17 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BB65148CFEB7E786429731D3"
+               BuildableName = "TerminalKun2AppTests.xctest"
+               BlueprintName = "TerminalKun2AppTests"
+               ReferencedContainer = "container:TerminalKun2.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "41D07466A3D4D5AD86C64800"
                BuildableName = "TerminalKun2UITests.xctest"
                BlueprintName = "TerminalKun2UITests"
