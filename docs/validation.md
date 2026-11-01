@@ -54,6 +54,8 @@ UI は再起動をまたぐ保存を実際に検証する。繰り返し実行�
 
 字間の調整と、入力中だけ表示する変換パネルの設計・検証は [文字密度と日本語入力](compact-input.md) を参照。
 
+同日の追加検証で、SwiftPM 22件（21成功、実AI 1件は環境未指定でskip）、配信・依存監査14件、iOS表示単体3件とiPhone UI 5件が成功した。実辞書による変換中に端末・キーの位置が動かず、縦横の候補操作と確定、横画面の設定メニュー、実SSHを確認。Releaseアーカイブ12の作成も成功した。最終UI結果は `Test-TerminalKun2-2026.11.01_23-21-31-+0900.xcresult`。
+
 ## TestFlight 配信準備の追加検証
 
 同日、Xcode の Developer Team で App Store 用の配布署名済み IPA を作成し、codesign の strict 検証と Team / アプリ識別子 / 配布 entitlement を確認した。配信・依存監査スクリプトの14件と既存 SwiftPM 試験（18件成功、実 AI 1件は環境未指定で skip）が成功。Xcode の中間アーカイブは署名前の状態で、書き出した IPA に配布署名を付ける。
