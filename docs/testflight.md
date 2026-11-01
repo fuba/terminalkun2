@@ -63,7 +63,7 @@ TestFlight の各ビルドの有効期間はアップロードから90日。継�
 
 ## 初回配信の検証（2026-11-01）
 
-- Xcode に登録した Developer Team で App Store 用プロファイルを生成し、Apple の cloud-managed Distribution 署名で IPA を書き出した。`codesign --verify --deep --strict` とアプリ識別子・Team・`get-task-allow=false` の検証は成功。
+- Xcode に登録した Developer Team で App Store 用プロファイルを生成し、Apple の cloud-managed Distribution 署名で IPA を書き出した。`codesign --verify --deep --strict`、Apple Distribution の証明書チェーンと正しい Team、アプリ識別子・`get-task-allow=false` の検証は成功。
 - アップロードを実行し、App Store Connect にアプリレコードが未登録のため Apple から明確なエラーを受け取った。アプリ登録・内部グループ設定は未完了で、iPhone への配信成功とは扱わない。
 - Xcode の IPA 書き出し時に、Homebrew rsync と macOS rsync のオプション差で Copy failed になった。Xcode の子プロセスだけシステムの PATH を先頭にし、署名・パッケージ作成を変更せず解消した。
 - 配信状態、Team の実値、証明書、署名済み IPA は git 管理外。パスワードや API key を新規にリポジトリへ保存していない。

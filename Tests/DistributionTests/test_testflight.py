@@ -33,7 +33,7 @@ class DistributionTests(unittest.TestCase):
 
     def test_signature_requirement_requires_apple_distribution_and_team(self):
         requirement = module.signing_requirement('ABCDEFGHIJ')
-        self.assertIn('anchor apple generic', requirement)
+        self.assertTrue(requirement.startswith('=anchor apple generic'))
         self.assertIn('subject.OU] = "ABCDEFGHIJ"', requirement)
         self.assertIn('1.2.840.113635.100.6.1.4', requirement)
         with self.assertRaises(ValueError):
