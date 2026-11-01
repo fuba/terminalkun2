@@ -6,3 +6,6 @@ xcuserdata/
 *.xcuserstate
 .worktrees/
 *.log
+
+__pycache__/
+*.pyc

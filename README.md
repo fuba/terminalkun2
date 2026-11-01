@@ -17,6 +17,16 @@ SSH agent 転送は接続先ごとに明示的に有効にできます。選択�
 
 コマンド生成には Ollama の URL、または OpenAI 互換の `/v1` URL とモデル名を設定します。依頼文だけを送信し、応答を確認してから入力欄へ挿入します。自動実行はしません。
 
+## TestFlight でインストール・更新する
+
+所有者向けの配信は TestFlight の内部テストを使います。[初回設定と更新手順](docs/testflight.md)に従って Team と App Store Connect のアプリを設定した後は、次で署名検証とアップロードを繰り返せます。
+
+```sh
+bash scripts/testflight.sh update
+```
+
+同じ Team / Bundle ID を保持し、ビルド番号を更新します。iPhone の TestFlight で自動アップデートを有効にすると、新しい配信を受け取れます。
+
 ## 開発と検証
 
 Xcode 27.2 / Swift 6.2、XcodeGen、Python 3 を使用して検証しました。署名なしの実機向けビルドも可能です。
@@ -45,7 +55,7 @@ iOS は任意のローカルプログラムの fork/exec と、無期限のバ�
 
 詳細は [機能対応表](docs/feature-parity.md)、[検証記録](docs/validation.md)、[実装構成](docs/implementation.md)、[SSH ライブラリ修正](Vendor/PATCHES.md) を参照してください。
 
-この環境には署名用の開発者 ID と接続済み実機がなく、実機へのインストール、Secure Enclave、マイク入力の実機確認は未実施です。App Store / TestFlight 配布物ではありません。
+初回実装では署名なしの実機向けビルドを検証し、その後 TestFlight 用の Apple Distribution 署名済み IPA も作成しました。TestFlight のアプリ登録・配信設定は [配信記録](docs/testflight.md)を参照してください。物理 iPhone でのインストール、Secure Enclave、マイク入力の確認は未実施です。
 
 ## ライセンス
 
