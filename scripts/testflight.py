@@ -77,6 +77,19 @@ class DistributionState:
             self.save(state)
 
 
+def distribution_info(original, declaration):
+    if declaration is None:
+        return original
+    if (declaration.get('algorithms') != 'standard' or declaration.get('distributionInFrance') is not False
+            or declaration.get('exemptFromDocumentation') is not True):
+        raise ValueError('暗号化申告の範囲が異なります。App Store Connect で申告を確認してください。')
+    info = plistlib.loads(original)
+    if info.get('ITSAppUsesNonExemptEncryption') is True:
+        raise ValueError('ソースの暗号化設定と既存の申告が競合しています。')
+    info['ITSAppUsesNonExemptEncryption'] = False
+    return plistlib.dumps(info)
+
+
 def export_options(team):
     return {'method': 'app-store-connect', 'destination': 'upload',
             'teamID': team, 'signingStyle': 'automatic',
@@ -160,6 +173,8 @@ def archive_build(store):
     archive = DISTRIBUTION / 'Archives' / f'TerminalKun2-{number}.xcarchive'
     log = DISTRIBUTION / 'logs' / f'archive-{number}.log'
     run(['bash', 'scripts/dev.sh', 'prepare', derived], log)
+    info = DISTRIBUTION / f'Info-{number}.plist'
+    info.write_bytes(distribution_info((ROOT / 'App/Info.plist').read_bytes(), state.get('encryptionDeclaration')))
     # Xcode archive actions use a separate products directory for host build tools.
     products = derived / 'Build/Intermediates.noindex/ArchiveIntermediates/TerminalKun2/BuildProductsPath/Release'
     products.mkdir(parents=True, exist_ok=True)
@@ -174,7 +189,7 @@ def archive_build(store):
                  '-skipPackagePluginValidation', '-disableAutomaticPackageResolution',
                  '-onlyUsePackageVersionsFromResolvedFile', 'ARCHS=arm64', 'ONLY_ACTIVE_ARCH=YES',
                  f'TERMINALKUN2_DEVELOPMENT_TEAM={state["teamID"]}', f'TERMINALKUN2_APP_BUNDLE_ID={state["bundleID"]}',
-                 f'TERMINALKUN2_BUILD_NUMBER={number}', 'CODE_SIGN_STYLE=Automatic']
+                 f'TERMINALKUN2_BUILD_NUMBER={number}', f'TERMINALKUN2_INFO_PLIST={info}', 'CODE_SIGN_STYLE=Automatic']
     arguments += ['CODE_SIGNING_ALLOWED=NO']
     run(arguments + ['archive'], log)
     validate_archive(archive, state['teamID'], state['bundleID'], number)
@@ -237,12 +252,20 @@ def main():
     configure = commands.add_parser('configure')
     configure.add_argument('--team', required=True)
     configure.add_argument('--bundle', default='dev.fuba.terminalkun2')
+    encryption = commands.add_parser('encryption', help='Record the exemption confirmed in App Store Connect')
+    encryption.add_argument('--standard-no-france', action='store_true', required=True)
     for name in ['status', 'archive', 'export', 'upload', 'update']:
         commands.add_parser(name)
     args = parser.parse_args()
     store = DistributionState(DISTRIBUTION)
     if args.command == 'configure':
         store.configure(args.team, args.bundle)
+    elif args.command == 'encryption':
+        if not store.read().get('lastUpload'):
+            raise ValueError('初回アップロードと App Store Connect の暗号化申告を先に完了してください。')
+        store.update(encryptionDeclaration={'algorithms': 'standard', 'distributionInFrance': False,
+                     'exemptFromDocumentation': True, 'source': 'App Store Connect questionnaire',
+                     'confirmedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()})
     elif args.command == 'status':
         print(json.dumps(store.read(), indent=2))
     else:

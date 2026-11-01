@@ -50,7 +50,13 @@ bash scripts/testflight.sh upload
 
 ## Apple 側の処理
 
-アップロード成功と iPhone での配信開始は別の状態。Apple の処理完了後、TestFlight の状態と内部グループへの配信を確認する。SSH を実装するアプリなので暗号化に関する質問を無条件に「暗号化なし」として回避しない。必要な書類や回答は App Store Connect の暗号化設定へ記録する。
+アップロード成功と iPhone での配信開始は別の状態。Apple の処理完了後、TestFlight の状態と内部グループへの配信を確認する。SSH を実装するアプリなので暗号化に関する質問を無条件に「暗号化なし」として回避しない。初回は「標準的な暗号化アルゴリズム」を選び、所有者がフランスへ配信しないことを確認して申告した。この回答で Apple が書類不要とした設定を、次でローカルの配信設定へ記録する。
+
+```sh
+bash scripts/testflight.sh encryption --standard-no-france
+```
+
+このコマンドは初回アップロードと App Store Connect での申告を完了した後に使用する。以降のアーカイブでは、確認した範囲に限り `ITSAppUsesNonExemptEncryption=false` を生成した Info.plist に設定し、同じ質問による配信停止を避ける。ソースの App/Info.plist へ全利用者共通の申告をハードコードしない。暗号方式や配信地域が変わる場合は申告を再確認する。
 
 TestFlight の各ビルドの有効期間はアップロードから90日。継続利用する場合は期間内に新しいビルドを配信する。新しいビルドの配信は、このコマンドを実行するか、今後の開発作業で実行する。
 
@@ -64,6 +70,9 @@ TestFlight の各ビルドの有効期間はアップロードから90日。継�
 ## 初回配信の検証（2026-11-01）
 
 - Xcode に登録した Developer Team で App Store 用プロファイルを生成し、Apple の cloud-managed Distribution 署名で IPA を書き出した。`codesign --verify --deep --strict`、Apple Distribution の証明書チェーンと正しい Team、アプリ識別子・`get-task-allow=false` の検証は成功。
-- アップロードを実行し、App Store Connect にアプリレコードが未登録のため Apple から明確なエラーを受け取った。アプリ登録・内部グループ設定は未完了で、iPhone への配信成功とは扱わない。
+- 初回のアプリレコード未登録エラーを解消し、App Store Connect に terminalkun2 を登録した。実アップロードが成功し、Apple 側のビルド処理へ進んだ。「個人用」内部グループを作成し、所有者1人と Xcode ビルドの自動配信を設定した。ビルド 0.1.0 (5) がグループ内で「テスト中」となり、所有者から物理 iPhone でインストール・起動できたことを確認した。
 - Xcode の IPA 書き出し時に、Homebrew rsync と macOS rsync のオプション差で Copy failed になった。Xcode の子プロセスだけシステムの PATH を先頭にし、署名・パッケージ作成を変更せず解消した。
 - 配信状態、Team の実値、証明書、署名済み IPA は git 管理外。パスワードや API key を新規にリポジトリへ保存していない。
+
+- 次回更新で同じ暗号化質問が出ないよう、確認済み申告を配信用 Info.plist にのみ反映する。未申告、フランスあり、独自暗号、ソースの明示的な非免除設定との競合は自動で免除扱いにしない。
+- Xcode がローカル SwiftPM package に作る `.swiftpm/xcode/xcuserdata/*.xcuserdatad/xcschemes/xcschememanagement.plist` は実行されない UI 設定なのでハッシュ検査から除外する。それ以外の全ファイルは従来どおり照合し、`.xcscheme` やソース改変を見逃さない回帰試験を追加した。

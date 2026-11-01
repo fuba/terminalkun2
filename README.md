@@ -55,7 +55,7 @@ iOS は任意のローカルプログラムの fork/exec と、無期限のバ�
 
 詳細は [機能対応表](docs/feature-parity.md)、[検証記録](docs/validation.md)、[実装構成](docs/implementation.md)、[SSH ライブラリ修正](Vendor/PATCHES.md) を参照してください。
 
-初回実装では署名なしの実機向けビルドを検証し、その後 TestFlight 用の Apple Distribution 署名済み IPA も作成しました。TestFlight のアプリ登録・配信設定は [配信記録](docs/testflight.md)を参照してください。物理 iPhone でのインストール、Secure Enclave、マイク入力の確認は未実施です。
+初回実装では署名なしの実機向けビルドを検証し、その後 TestFlight 用の Apple Distribution 署名済み IPA も作成しました。TestFlight での配信後、所有者の iPhone へのインストールと起動を確認しました。自動更新の設定は [配信記録](docs/testflight.md)を参照してください。Secure Enclave とマイク入力の実機確認は未実施です。
 
 ## ライセンス
 

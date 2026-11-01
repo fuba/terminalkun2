@@ -60,7 +60,6 @@
 		7C07E007ECD43AE302D366BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		8566351EB2B9730433B3DDDB /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		9EEB6FC0495A2DC547576699 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AD345BD05636974986A14EEA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CBB050C70D49B09ADD96E5DA /* KeyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyListView.swift; sourceTree = "<group>"; };
 		D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prompts.swift; sourceTree = "<group>"; };
 		D5DB6358A14396E6F11A1FC1 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
@@ -144,7 +143,6 @@
 				DD1DAEFC456A8175CB424471 /* Diagnostics.swift */,
 				45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */,
 				7C07E007ECD43AE302D366BF /* HelpView.swift */,
-				AD345BD05636974986A14EEA /* Info.plist */,
 				CBB050C70D49B09ADD96E5DA /* KeyListView.swift */,
 				356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */,
 				D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */,
@@ -379,7 +377,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CURRENT_PROJECT_VERSION = "$(TERMINALKUN2_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
-				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_FILE = "$(TERMINALKUN2_INFO_PLIST)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -392,6 +390,7 @@
 				TERMINALKUN2_APP_BUNDLE_ID = dev.fuba.terminalkun2;
 				TERMINALKUN2_BUILD_NUMBER = 1;
 				TERMINALKUN2_DEVELOPMENT_TEAM = "";
+				TERMINALKUN2_INFO_PLIST = App/Info.plist;
 			};
 			name = Debug;
 		};
@@ -463,7 +462,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CURRENT_PROJECT_VERSION = "$(TERMINALKUN2_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
-				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_FILE = "$(TERMINALKUN2_INFO_PLIST)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -476,6 +475,7 @@
 				TERMINALKUN2_APP_BUNDLE_ID = dev.fuba.terminalkun2;
 				TERMINALKUN2_BUILD_NUMBER = 1;
 				TERMINALKUN2_DEVELOPMENT_TEAM = "";
+				TERMINALKUN2_INFO_PLIST = App/Info.plist;
 			};
 			name = Release;
 		};

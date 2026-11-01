@@ -10,3 +10,5 @@
 - Keep private keys in device-only Keychain. Do not persist passwords, auto-execute generated commands, accept changed host keys, grant terminal clipboard reads, or let remote graphics open local files.
 - Test fixtures, logs, application settings, SSH aliases, and private screenshots remain under ignored build or reference directories. Screenshots in docs must use only owned test data.
 - Keep CI manual / opt-in. Record validation and material limitations in docs, and review correctness and security directly in the current Codex agent.
+
+- TestFlight の暗号化申告は確認済みの配布設定から生成した Info.plist だけへ反映する。全利用者共通の暗号化免除をハードコードしない。暗号方式・配信地域が変わる場合は申告を再確認する。
