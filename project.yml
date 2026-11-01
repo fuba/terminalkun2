@@ -47,6 +47,15 @@ targets:
         SUPPORTS_MACCATALYST: NO
         'CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]': App/Simulator.entitlements
         'CODE_SIGN_IDENTITY[sdk=iphonesimulator*]': '-'
+  TerminalKun2AppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/TerminalAppTests]
+    dependencies:
+      - target: TerminalKun2
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
   TerminalKun2UITests:
     type: bundle.ui-testing
     platform: iOS
@@ -62,4 +71,4 @@ schemes:
       targets:
         TerminalKun2: all
     test:
-      targets: [TerminalKun2UITests]
+      targets: [TerminalKun2AppTests, TerminalKun2UITests]

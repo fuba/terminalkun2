@@ -69,7 +69,9 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.nativeForegroundColor = theme.foreground
         terminal.caretColor = theme.foreground
         terminal.backgroundOpacity = CGFloat(max(0.35, min(1, appearance.opacity)))
-        terminal.font = UIFont(name: appearance.fontName, size: CGFloat(appearance.fontSize)) ?? .monospacedSystemFont(ofSize: CGFloat(appearance.fontSize), weight: .regular)
+        if previous?.fontName != appearance.fontName || previous?.fontSize != appearance.fontSize {
+            terminal.font = TerminalTypography.font(name: appearance.fontName, size: CGFloat(appearance.fontSize))
+        }
         if previous?.scrollback != appearance.scrollback { terminal.changeScrollback(appearance.scrollback) }
         if previous?.customKeyboard != appearance.customKeyboard {
             let focused = terminal.isFirstResponder

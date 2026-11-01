@@ -1,6 +1,10 @@
 import XCTest
 
 final class TerminalKun2UITests: XCTestCase {
+    override func tearDown() {
+        XCUIDevice.shared.orientation = .portrait
+        super.tearDown()
+    }
     func testLocalWorkspaceKeyboardSearchAndSettings() throws {
         let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
         if app.buttons["openLocal"].waitForExistence(timeout: 8) { app.buttons["openLocal"].tap() }
@@ -71,16 +75,47 @@ final class TerminalKun2UITests: XCTestCase {
         app.buttons["完了"].tap(); app.buttons["キーボード"].tap()
         func key(_ name: String) -> XCUIElement { app.descendants(matching: .any)["program-key-" + name].firstMatch }
         XCTAssertTrue(key("e").waitForExistence(timeout: 5))
-        for name in ["e", "c", "h", "o", "space", "language", "n", "i", "h", "o", "n", "g", "o", "space"] { key(name).tap() }
+        let panel = app.descendants(matching: .any)["compositionPanel"].firstMatch
+        XCTAssertFalse(panel.exists)
+        let surface = app.descendants(matching: .any)["terminalSurface"].firstMatch
+        let viewport = surface.frame
+        let keyTop = key("e").frame.minY
+        for name in ["e", "c", "h", "o", "space", "language", "n", "i", "h", "o", "n", "g", "o"] { key(name).tap() }
+        XCTAssertTrue(panel.waitForExistence(timeout: 3))
+        XCTAssertEqual(surface.frame.height, viewport.height, accuracy: 1)
+        XCTAssertEqual(key("e").frame.minY, keyTop, accuracy: 1)
+        XCTAssertGreaterThanOrEqual(panel.frame.minY, viewport.minY)
+        XCTAssertLessThanOrEqual(panel.frame.maxY, viewport.maxY)
+        key("space").tap()
         XCTAssertTrue(app.buttons["candidate-0"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["candidate-0"].label.contains("日本語"))
+        let conversion = XCTAttachment(screenshot: app.screenshot()); conversion.name = "Floating Japanese conversion"; conversion.lifetime = .keepAlways; add(conversion)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(panel.waitForExistence(timeout: 3))
+        let candidateReady = XCTNSPredicateExpectation(predicate: NSPredicate { object, _ in
+            guard let candidate = object as? XCUIElement else { return false }
+            return candidate.isHittable && candidate.frame.height >= 44
+        }, object: app.buttons["candidate-0"])
+        XCTAssertEqual(XCTWaiter.wait(for: [candidateReady], timeout: 8), .completed)
+        XCTAssertLessThanOrEqual(panel.frame.maxX, surface.frame.maxX + 1)
+        let landscape = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); landscape.name = "Floating conversion in landscape"; landscape.lifetime = .keepAlways; add(landscape)
+        XCTAssertTrue(app.buttons["candidate-0"].isHittable)
+        XCTAssertGreaterThanOrEqual(app.buttons["candidate-0"].frame.height, 44)
+        app.buttons["candidate-0"].tap()
+        XCUIDevice.shared.orientation = .portrait
         key("enter").tap()
+        XCTAssertFalse(panel.exists)
         let preedit = app.descendants(matching: .any)["compositionText"].firstMatch
         XCTAssertFalse(preedit.exists && preedit.label.contains("日本語"))
         key("enter").tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(key("symbols").waitForExistence(timeout: 5)); key("symbols").tap()
         XCTAssertTrue(key("=").waitForExistence(timeout: 3))
+        app.buttons["端末操作"].tap()
+        XCTAssertTrue(app.buttons["接続先"].waitForExistence(timeout: 3))
+        app.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 3))
+        app.buttons["完了"].tap()
         XCUIDevice.shared.orientation = .portrait
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Japanese programmer keyboard"; screenshot.lifetime = .keepAlways; add(screenshot)
     }

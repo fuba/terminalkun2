@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06563649987E3828B52F5E08 /* TerminalContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */; };
 		0DCE3024415A5E16C03872F3 /* TerminalCore in Frameworks */ = {isa = PBXBuildFile; productRef = C826A186415692CAD5654717 /* TerminalCore */; };
 		0DD58A6EAE4432F9E82FAE94 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DAEFC456A8175CB424471 /* Diagnostics.swift */; };
+		11869E9C1252484DCF8CFF8F /* CompositionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */; };
 		1B4E8613EFEB9BA586F7FE76 /* AppIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 780D0484115A6BF64DA57848 /* AppIcon.svg */; };
 		1D237B1EA422F7B89A38E41B /* ProgramKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */; };
 		24B88A8EC1EE9D7D4A108693 /* ConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */; };
@@ -28,13 +30,22 @@
 		9B193867D79EC9983BFF4B10 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5DB6358A14396E6F11A1FC1 /* AppStore.swift */; };
 		A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */; };
 		A1B465DC364E1148AA145020 /* TerminalTransport in Frameworks */ = {isa = PBXBuildFile; productRef = B22DCF3968A66CB6C4A25059 /* TerminalTransport */; };
+		C347833CCC03DC39AB4D8C1D /* TerminalTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A479C8C2C7A8D3856083C54 /* TerminalTypography.swift */; };
 		CC6F9141BBB2AC43248CABEB /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */; };
+		E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E55C85640D36423C7DD9AAE /* PresentationTests.swift */; };
 		E987D08DE334A673548A801C /* Mark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 5E5E8C8C22F723E84FA35E9F /* Mark.svg */; };
 		EB790067DEF1668EE312A73E /* VoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5F4951B81F7E554387B5E /* VoiceView.swift */; };
 		F6D41856A8B68C323DBD4383 /* TerminalKun2UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64383E950DA8640375F1A18 /* TerminalKun2UITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		1777193F452C42153E0D2ED9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 39A426D6FFD903695CD88B1F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D8898719732966AE7BFBB9F4;
+			remoteInfo = TerminalKun2;
+		};
 		9435C187BD67B1E4A1B3CEB8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 39A426D6FFD903695CD88B1F /* Project object */;
@@ -48,6 +59,8 @@
 		00447403DAB03D130456273E /* TerminalKun2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKun2App.swift; sourceTree = "<group>"; };
 		00534E178461582FC03C1110 /* SessionTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTerminalView.swift; sourceTree = "<group>"; };
 		0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
+		0E55C85640D36423C7DD9AAE /* PresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationTests.swift; sourceTree = "<group>"; };
+		15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalContainerView.swift; sourceTree = "<group>"; };
 		26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramKeyboard.swift; sourceTree = "<group>"; };
 		3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,8 +72,11 @@
 		780D0484115A6BF64DA57848 /* AppIcon.svg */ = {isa = PBXFileReference; path = AppIcon.svg; sourceTree = "<group>"; };
 		7C07E007ECD43AE302D366BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		8566351EB2B9730433B3DDDB /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
+		9A479C8C2C7A8D3856083C54 /* TerminalTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalTypography.swift; sourceTree = "<group>"; };
 		9EEB6FC0495A2DC547576699 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C2CFF3668F7A708FD3BFF5A5 /* TerminalKun2AppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBB050C70D49B09ADD96E5DA /* KeyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyListView.swift; sourceTree = "<group>"; };
+		D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionPanel.swift; sourceTree = "<group>"; };
 		D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prompts.swift; sourceTree = "<group>"; };
 		D5DB6358A14396E6F11A1FC1 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsView.swift; sourceTree = "<group>"; };
@@ -107,10 +123,19 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		615175F3EA073F750B3AF405 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				AF09F6BD14CFBBE822E0CA86 /* TerminalAppTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		706A60B45C01D7FD3F64BE22 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				470CE9976BDA9D4EC7A05604 /* TerminalKun2.app */,
+				C2CFF3668F7A708FD3BFF5A5 /* TerminalKun2AppTests.xctest */,
 				3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */,
 			);
 			name = Products;
@@ -122,9 +147,18 @@
 				FD01AC5F41FA0038F8FD3321 /* App */,
 				40DA4784858751A5AE0921EF /* Packages */,
 				3A489D9A1133FC8FBC1D7FC9 /* Resources */,
+				615175F3EA073F750B3AF405 /* Tests */,
 				E849A83CD13E1039E090C7AC /* UITests */,
 				706A60B45C01D7FD3F64BE22 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		AF09F6BD14CFBBE822E0CA86 /* TerminalAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				0E55C85640D36423C7DD9AAE /* PresentationTests.swift */,
+			);
+			path = TerminalAppTests;
 			sourceTree = "<group>";
 		};
 		E849A83CD13E1039E090C7AC /* UITests */ = {
@@ -139,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				D5DB6358A14396E6F11A1FC1 /* AppStore.swift */,
+				D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */,
 				D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */,
 				DD1DAEFC456A8175CB424471 /* Diagnostics.swift */,
 				45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */,
@@ -150,8 +185,10 @@
 				00534E178461582FC03C1110 /* SessionTerminalView.swift */,
 				DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */,
 				42AEF36D6EF139720A1B6949 /* Simulator.entitlements */,
+				15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */,
 				00447403DAB03D130456273E /* TerminalKun2App.swift */,
 				0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */,
+				9A479C8C2C7A8D3856083C54 /* TerminalTypography.swift */,
 				E2A5F4951B81F7E554387B5E /* VoiceView.swift */,
 				8566351EB2B9730433B3DDDB /* WorkspaceView.swift */,
 			);
@@ -178,6 +215,24 @@
 			productName = TerminalKun2UITests;
 			productReference = 3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		BB65148CFEB7E786429731D3 /* TerminalKun2AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51E2BDAC95BB2CC040993DA7 /* Build configuration list for PBXNativeTarget "TerminalKun2AppTests" */;
+			buildPhases = (
+				DD4CABCAE8941F5C1D5D197D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2565ACC4BD7CACAC6AA6336F /* PBXTargetDependency */,
+			);
+			name = TerminalKun2AppTests;
+			packageProductDependencies = (
+			);
+			productName = TerminalKun2AppTests;
+			productReference = C2CFF3668F7A708FD3BFF5A5 /* TerminalKun2AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		D8898719732966AE7BFBB9F4 /* TerminalKun2 */ = {
 			isa = PBXNativeTarget;
@@ -216,6 +271,10 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = D8898719732966AE7BFBB9F4;
 					};
+					BB65148CFEB7E786429731D3 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 					D8898719732966AE7BFBB9F4 = {
 						DevelopmentTeam = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Automatic;
@@ -240,6 +299,7 @@
 			projectRoot = "";
 			targets = (
 				D8898719732966AE7BFBB9F4 /* TerminalKun2 */,
+				BB65148CFEB7E786429731D3 /* TerminalKun2AppTests */,
 				41D07466A3D4D5AD86C64800 /* TerminalKun2UITests */,
 			);
 		};
@@ -269,11 +329,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DD4CABCAE8941F5C1D5D197D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EFC268BBA06E3FF07A6EAEB6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				9B193867D79EC9983BFF4B10 /* AppStore.swift in Sources */,
+				11869E9C1252484DCF8CFF8F /* CompositionPanel.swift in Sources */,
 				24B88A8EC1EE9D7D4A108693 /* ConnectionsView.swift in Sources */,
 				0DD58A6EAE4432F9E82FAE94 /* Diagnostics.swift in Sources */,
 				A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */,
@@ -284,8 +353,10 @@
 				8A2444856EBDBB91DD7E01C8 /* SecureStore.swift in Sources */,
 				31B2AA91DC95AAB6CBB577EF /* SessionTerminalView.swift in Sources */,
 				5AC416E3DCAE817C5BA8B7AC /* SettingsView.swift in Sources */,
+				06563649987E3828B52F5E08 /* TerminalContainerView.swift in Sources */,
 				642ED0989DA3FD43E0B72B63 /* TerminalKun2App.swift in Sources */,
 				772D3B4B7CFD0C15D08FD853 /* TerminalSession.swift in Sources */,
+				C347833CCC03DC39AB4D8C1D /* TerminalTypography.swift in Sources */,
 				EB790067DEF1668EE312A73E /* VoiceView.swift in Sources */,
 				7C9A5E663E4ED2450259E5A5 /* WorkspaceView.swift in Sources */,
 			);
@@ -294,6 +365,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2565ACC4BD7CACAC6AA6336F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D8898719732966AE7BFBB9F4 /* TerminalKun2 */;
+			targetProxy = 1777193F452C42153E0D2ED9 /* PBXContainerItemProxy */;
+		};
 		72D769A3368928797DE6B20F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D8898719732966AE7BFBB9F4 /* TerminalKun2 */;
@@ -367,6 +443,23 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
+		};
+		6F35309C40EEA947EBC3B4BE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fuba.TerminalKun2AppTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TerminalKun2.app/TerminalKun2";
+			};
+			name = Release;
 		};
 		7952C13A3DAD5AA24CE43187 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -496,6 +589,23 @@
 			};
 			name = Debug;
 		};
+		F4749EDDBB6BC86B9A484AFF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.fuba.TerminalKun2AppTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TerminalKun2.app/TerminalKun2";
+			};
+			name = Debug;
+		};
 		FF01DCDB309C9E7E83EE8E82 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -521,6 +631,15 @@
 			buildConfigurations = (
 				0B3BBDBD4D7D90B54D012DA4 /* Debug */,
 				AEE87FC8744618749A1D3D4B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		51E2BDAC95BB2CC040993DA7 /* Build configuration list for PBXNativeTarget "TerminalKun2AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4749EDDBB6BC86B9A484AFF /* Debug */,
+				6F35309C40EEA947EBC3B4BE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

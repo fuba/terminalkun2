@@ -8,6 +8,7 @@ struct TerminalKun2App: App {
         WindowGroup {
             WorkspaceView().environmentObject(store)
                 .tint(.primary)
+                .tracking(TerminalTypography.tracking)
                 .onOpenURL { store.open($0) }
                 .onChange(of: scenePhase) { _, phase in store.sceneChanged(phase) }
         }
