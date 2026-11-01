@@ -5,7 +5,8 @@ struct DictionaryView: View {
     @EnvironmentObject var store: AppStore
     @Environment(\.dismiss) var dismiss
     var embedded = false
-    @State private var reading = "", word = ""
+    @State private var reading = ""
+    @State private var word = ""
     var body: some View {
         if embedded { content }
         else { NavigationStack { content.toolbar { ToolbarItem(placement: .confirmationAction) { Button("完了") { dismiss() } } } } }

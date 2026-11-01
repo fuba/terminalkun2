@@ -2,6 +2,7 @@
 """Reject unaudited revisions and enforce a minimum published age."""
 import datetime
 import json
+import hashlib
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
@@ -16,3 +17,14 @@ for pin in lock['pins']:
     published = datetime.datetime.fromisoformat(entry['publishedAt'].replace('Z', '+00:00'))
     assert now - published >= datetime.timedelta(hours=24), f"Dependency too new: {pin['identity']}"
 print(f"Verified {len(lock['pins'])} reviewed, pinned dependencies older than 24 hours")
+
+vendors = json.loads((root / 'docs/vendor-audit.json').read_text())
+for name, entry in vendors.items():
+    published = datetime.datetime.fromisoformat(entry['publishedAt'].replace('Z', '+00:00'))
+    assert now - published >= datetime.timedelta(hours=24), f"Vendored dependency too new: {name}"
+    assert entry['review']
+    directory = root / 'Vendor' / name
+    actual = {str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(directory.rglob('*')) if path.is_file()}
+    assert actual == entry['files'], f"Unreviewed vendored changes: {name}; review and update the audit"
+print(f"Verified all file hashes for {len(vendors)} reviewed vendored dependencies")

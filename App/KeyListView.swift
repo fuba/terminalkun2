@@ -41,13 +41,14 @@ struct KeyListView: View {
             Section {
                 TextField("鍵の名前", text: $name)
                 Button("Ed25519 鍵を生成", systemImage: "plus") { generate() }.disabled(generating || name.isEmpty).accessibilityIdentifier("generateKey")
+                if KeyMaterial.hardwareAvailable { Button("Secure Enclave 鍵を生成", systemImage: "lock.shield") { generateHardware() }.disabled(name.isEmpty) }
             }
             Section("詳細") { Button("既存の秘密鍵を取り込む", systemImage: "square.and.arrow.down") { importer = true } }
         }.navigationTitle("SSH 鍵").navigationBarTitleDisplayMode(.inline)
             .sheet(item: $selected) { key in
                 NavigationStack {
                     Form {
-                        Section(key.name) { Text(key.publicKey).font(.system(.body, design: .monospaced)).textSelection(.enabled) }
+                        Section(key.name) { Text(key.publicKey).font(.system(.body, design: .monospaced)).textSelection(.enabled).accessibilityIdentifier("publicKeyText") }
                         Section {
                             Button("公開鍵をコピー", systemImage: "doc.on.doc") { UIPasteboard.general.string = key.publicKey }
                             Button("公開鍵を共有・保存", systemImage: "square.and.arrow.up") { share(key) }
@@ -117,13 +118,21 @@ struct KeyListView: View {
             store.configuration.keys.append(key); showImport = false; selected = key
         } catch { store.error = error.localizedDescription }
     }
+    private func generateHardware() {
+        do {
+            let material = try KeyMaterial.generateHardware(name: name)
+            var key = SavedKey(name: name, publicKey: material.publicKey); key.hardwareBacked = true
+            try SecureStore.set(material.data, account: key.id.uuidString)
+            store.configuration.keys.append(key); selected = key
+        } catch { store.error = error.localizedDescription }
+    }
     private func share(_ key: SavedKey) {
         do {
             let folder = store.support.appendingPathComponent("PublicKeys"); try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let safe = key.name.unicodeScalars.map { CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_" ? String($0) : "_" }.joined()
             let url = folder.appendingPathComponent((safe.isEmpty ? "id_ed25519" : safe) + ".pub")
             try (key.publicKey + "\n").write(to: url, atomically: true, encoding: .utf8)
-            selected = nil; store.shareURLs = [url]; store.showShare = true
+            selected = nil; store.share([url])
         } catch { store.error = error.localizedDescription }
     }
 }

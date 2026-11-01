@@ -11,6 +11,7 @@ struct ConnectionsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section { Button("端末内の作業フォルダ", systemImage: "folder") { store.newLocal() }.accessibilityIdentifier("openLocalFromConnections") }
                 Section {
                     ForEach(store.sortedProfiles.filter { query.isEmpty || ($0.name + " " + $0.address).localizedCaseInsensitiveContains(query) }) { profile in
                         Button { store.connect(profile) } label: {
@@ -39,7 +40,6 @@ struct ConnectionsView: View {
                     Button("接続先を追加", systemImage: "plus") { editing = ConnectionProfile(name: "", host: "") }
                     Button("SSH config を取り込む", systemImage: "square.and.arrow.down") { importer = true }
                     if store.configuration.sshConfigBookmark != nil { Button("SSH config を再同期", systemImage: "arrow.clockwise") { store.syncSSHConfig() } }
-                    Button("端末内の作業フォルダ", systemImage: "folder") { store.newLocal() }.accessibilityIdentifier("openLocalFromConnections")
                 }
             }
             .searchable(text: $query, prompt: "名前・ホスト・ユーザー")
@@ -66,10 +66,10 @@ struct ProfileEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("名前", text: $profile.name)
+                    TextField("名前", text: $profile.name).accessibilityIdentifier("profileName")
                     TextField("ホスト名・IP", text: $profile.host).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("profileHost")
                     TextField("ユーザー名", text: $profile.user).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("profileUser")
-                    HStack { Text("ポート"); Spacer(); TextField("22", value: $profile.port, format: .number.grouping(.never)).keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(width: 90) }
+                    HStack { Text("ポート"); Spacer(); TextField("22", value: $profile.port, format: .number.grouping(.never)).keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(width: 90).accessibilityIdentifier("profilePort") }
                     Toggle("お気に入り", isOn: $profile.favorite)
                 }
                 Section("認証") {
@@ -78,6 +78,8 @@ struct ProfileEditor: View {
                         ForEach(store.configuration.keys) { key in Text(key.name).tag(Optional(key.id)) }
                     }
                     Button("鍵を管理", systemImage: "key") { showKeys = true }
+                    Toggle("SSH agent を転送", isOn: Binding(get: { profile.agentForwarding == true }, set: { profile.agentForwarding = $0 })).disabled(profile.keyID == nil)
+                    if profile.agentForwarding == true { Text("この接続先は、選択した鍵で別の SSH 接続を認証できます。秘密鍵は転送せず、アプリが前面にある間だけ署名します。").font(.callout).foregroundStyle(.secondary) }
                 }
                 Section("踏み台") {
                     Picker("ProxyJump", selection: Binding(get: { profile.jumpHost ?? "" }, set: { profile.jumpHost = $0.isEmpty ? nil : $0 })) {

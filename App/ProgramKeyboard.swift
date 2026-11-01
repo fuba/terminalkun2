@@ -14,10 +14,16 @@ final class ProgramKeyboard: UIInputView {
     private var modifiers = ModifierState()
     private var japanese = false
     private var function = false
+    private var symbols = false
     private var selectedCandidate = 0
+    private var geometrySize = CGSize.zero
+    private var geometryFunction = false
+    private var geometrySymbols = false
+    private var epoch = 0
     private let composition = UILabel()
     private let candidates = UIScrollView()
-    private let candidateStack = UIStackView()
+    private let candidateStack = UIView()
+    private var candidateButtons: [UIButton] = []
     var onModifiersChanged: ((Modifiers, Modifiers) -> Void)?
     init(session: TerminalSession) {
         self.session = session
@@ -25,25 +31,44 @@ final class ProgramKeyboard: UIInputView {
         super.init(frame: CGRect(x: 0, y: 0, width: 390, height: 300), inputViewStyle: .keyboard)
         allowsSelfSizing = true; isMultipleTouchEnabled = true; backgroundColor = .secondarySystemBackground
         composition.font = .systemFont(ofSize: 16); composition.textColor = .label; composition.accessibilityIdentifier = "compositionText"
+        composition.isAccessibilityElement = true; candidates.accessibilityIdentifier = "candidateList"
         addSubview(composition); addSubview(candidates)
-        candidateStack.axis = .horizontal; candidateStack.spacing = 8; candidates.addSubview(candidateStack)
+        composition.isUserInteractionEnabled = true
+        composition.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectComposition(_:))))
+        candidates.addSubview(candidateStack)
         NotificationCenter.default.addObserver(self, selector: #selector(background), name: UIApplication.willResignActiveNotification, object: nil)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-    override var intrinsicContentSize: CGSize { CGSize(width: UIView.noIntrinsicMetric, height: bounds.width > 600 ? 238 : 300) }
+    override var intrinsicContentSize: CGSize { CGSize(width: UIView.noIntrinsicMetric, height: traitCollection.verticalSizeClass == .compact ? 210 : 300) }
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.verticalSizeClass != traitCollection.verticalSizeClass { invalidateIntrinsicContentSize() }
+    }
     func setWords(_ words: [UserWord]) { engine.words = words }
     @objc private func background() { resetInput() }
     func resetInput() {
+        epoch += 1
         timers.values.forEach { $0.invalidate() }; timers = [:]; touches = [:]
         modifiers.reset(); engine.cancel(); selectedCandidate = 0; refreshComposition(); refreshModifiers()
     }
     override func layoutSubviews() {
         super.layoutSubviews()
-        timers.values.forEach { $0.invalidate() }; timers = [:]; touches = [:]
+        if geometrySize != bounds.size || geometryFunction != function || geometrySymbols != symbols {
+            epoch += 1; timers.values.forEach { $0.invalidate() }; timers = [:]; touches = [:]
+            geometrySize = bounds.size; geometryFunction = function; geometrySymbols = symbols
+        }
         composition.frame = CGRect(x: 10, y: 1, width: bounds.width - 20, height: 22)
         candidates.frame = CGRect(x: 5, y: 23, width: bounds.width - 10, height: 36)
-        candidateStack.frame = CGRect(origin: .zero, size: candidateStack.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize))
-        candidates.contentSize = CGSize(width: candidateStack.frame.width, height: 36)
+        var candidateX: CGFloat = 0
+        for button in candidateButtons {
+            let size = button.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: 36))
+            let width = max(44, size.width)
+            button.frame = CGRect(x: candidateX, y: 0, width: width, height: 36)
+            candidateX += width + 8
+        }
+        candidateStack.frame = CGRect(x: 0, y: 0, width: candidateX, height: 36)
+        candidates.contentSize = CGSize(width: candidateX, height: 36)
+        candidates.accessibilityElements = candidateButtons
         hits = []
         let rows = keyRows(), top: CGFloat = 62, rowHeight = (bounds.height - top - 4) / CGFloat(rows.count)
         for (rowIndex, row) in rows.enumerated() {
@@ -54,15 +79,26 @@ final class ProgramKeyboard: UIInputView {
                 x += width * key.units
             }
         }
-        accessibilityElements = hits.map { hit in
+        let keys = hits.map { hit in
             let element = KeyboardAccessibilityElement(accessibilityContainer: self)
             element.accessibilityLabel = display(hit.key); element.accessibilityTraits = .keyboardKey
+            element.accessibilityIdentifier = "program-key-" + hit.key.value
             element.accessibilityFrameInContainerSpace = hit.frame
             element.activate = { [weak self] in self?.handle(hit.key.value) }; return element
         }
+        accessibilityElements = [composition, candidates] + keys
         setNeedsDisplay()
     }
     private func keyRows() -> [[Key]] {
+        if symbols {
+            return [
+                Array("`[]{}<>|\\").map { Key(String($0)) },
+                Array("~!@#$%^&*").map { Key(String($0)) },
+                Array("()-_=+;:'\"").map { Key(String($0)) },
+                [Key(","), Key("."), Key("/"), Key("?"), Key("←", "left"), Key("→", "right"), Key("⌫", "backspace", 2)],
+                [Key("ABC", "symbols", 1.5), Key("Tab", "tab"), Key("space", "space", 4), Key("↵", "enter", 2)]
+            ]
+        }
         if function {
             return [
                 (1...6).map { Key("F\($0)", "f\($0)") },
@@ -77,7 +113,7 @@ final class ProgramKeyboard: UIInputView {
             Array("qwertyuiop").map { Key(String($0)) },
             Array("asdfghjkl;").map { Key(String($0)) },
             [Key("⇧", "shift", 1.3)] + Array("zxcvbnm").map { Key(String($0)) } + [Key("⌫", "backspace", 1.7)],
-            [Key(japanese ? "あ" : "A", "language", 1.2), Key("Fn", "fn"), Key("/"), Key("-"), Key(japanese ? "変換" : "space", "space", 3), Key("."), Key("↵", "enter", 1.8)]
+            [Key(japanese ? "あ" : "A", "language", 1.2), Key("Fn", "fn"), Key("#+=", "symbols"), Key("/"), Key(japanese ? "変換" : "space", "space", 3), Key("."), Key("↵", "enter", 1.8)]
         ]
     }
     private func display(_ key: Key) -> String {
@@ -104,12 +140,15 @@ final class ProgramKeyboard: UIInputView {
             guard let index = hits.firstIndex(where: { $0.frame.contains(point) }) else { continue }
             let id = ObjectIdentifier(touch); self.touches[id] = index
             let value = hits[index].key.value; handle(value)
+            let inputEpoch = epoch
             if value.count == 1 || ["backspace", "left", "right", "up", "down", "delete"].contains(value) {
                 timers[id] = Timer.scheduledTimer(withTimeInterval: 0.42, repeats: false) { [weak self] _ in
                     Task { @MainActor in
-                        guard let self, self.touches[id] != nil else { return }
+                        guard let self, self.touches[id] != nil, self.epoch == inputEpoch else { return }
                         self.handle(value)
-                        self.timers[id] = Timer.scheduledTimer(withTimeInterval: 0.065, repeats: true) { [weak self] _ in Task { @MainActor in self?.handle(value) } }
+                        self.timers[id] = Timer.scheduledTimer(withTimeInterval: 0.065, repeats: true) { [weak self] _ in Task { @MainActor in
+                            guard let self, self.epoch == inputEpoch, self.touches[id] != nil else { return }; self.handle(value)
+                        } }
                     }
                 }
             }
@@ -125,17 +164,28 @@ final class ProgramKeyboard: UIInputView {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { touches.forEach(finish) }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { touches.forEach(finish) }
     private func finish(_ touch: UITouch) { let id = ObjectIdentifier(touch); timers.removeValue(forKey: id)?.invalidate(); touches.removeValue(forKey: id); setNeedsDisplay() }
+    @objc private func selectComposition(_ gesture: UITapGestureRecognizer) {
+        guard engine.converting else { return }
+        let x = gesture.location(in: composition).x
+        var edge: CGFloat = 0
+        for (index, segment) in engine.segments.enumerated() {
+            edge += ((segment.text + " ") as NSString).size(withAttributes: [.font: composition.font!]).width
+            if x <= edge { engine.selectCandidate(selectedCandidate); engine.selectSegment(index); selectedCandidate = 0; refreshComposition(); return }
+        }
+    }
     func handle(_ value: String) {
         guard let session else { return }
         if ["control", "alt", "shift"].contains(value) {
             modifiers.tap(value == "control" ? .control : value == "alt" ? .alt : .shift); refreshModifiers(); return
         }
         if value == "language" {
+            epoch += 1
             if !engine.reading.isEmpty { session.send(Data(engine.commit().utf8)) }
             timers.values.forEach { $0.invalidate() }; timers = [:]
             japanese.toggle(); modifiers.reset(); refreshModifiers(); refreshComposition(); return
         }
         if value == "fn" { function.toggle(); setNeedsLayout(); return }
+        if value == "symbols" { symbols.toggle(); function = false; setNeedsLayout(); return }
         if value == "system" {
             if !engine.reading.isEmpty { session.send(Data(engine.commit().utf8)) }
             session.store?.configuration.appearance.customKeyboard.toggle(); return
@@ -148,12 +198,18 @@ final class ProgramKeyboard: UIInputView {
             switch value {
             case "space", "tab", "down":
                 if engine.converting { selectedCandidate = (selectedCandidate + 1) % max(1, engine.candidates.count) }
-                else { engine.convert(); selectedCandidate = 0 }; refreshComposition(); return
-            case "up": selectedCandidate = max(0, selectedCandidate - 1); refreshComposition(); return
+                else { engine.convert(); selectedCandidate = 0 }; engine.selectCandidate(selectedCandidate); refreshComposition(); return
+            case "up": selectedCandidate = max(0, selectedCandidate - 1); engine.selectCandidate(selectedCandidate); refreshComposition(); return
             case "enter": session.send(Data(engine.commit(index: engine.converting ? selectedCandidate : nil).utf8)); refreshComposition(); return
             case "escape": engine.cancel(); refreshComposition(); return
             case "backspace": engine.deleteBackward(); selectedCandidate = 0; refreshComposition(); return
-            case "left", "right": engine.moveCursor(value == "left" ? -1 : 1); refreshComposition(); return
+            case "left", "right":
+                let offset = value == "left" ? -1 : 1
+                if engine.converting {
+                    if modifiers.active.contains(.shift) { engine.adjustBoundary(offset) }
+                    else { engine.selectCandidate(selectedCandidate); engine.moveSegment(offset) }
+                } else { engine.moveCursor(offset) }
+                selectedCandidate = 0; modifiers.consume(); refreshModifiers(); refreshComposition(); return
             default: break
             }
         }
@@ -173,19 +229,29 @@ final class ProgramKeyboard: UIInputView {
     }
     private func refreshModifiers() { onModifiersChanged?(modifiers.active, modifiers.locked); setNeedsDisplay() }
     private func refreshComposition() {
-        composition.text = engine.reading
-        candidateStack.arrangedSubviews.forEach { candidateStack.removeArrangedSubview($0); $0.removeFromSuperview() }
+        if engine.converting {
+            let value = NSMutableAttributedString()
+            for (index, segment) in engine.segments.enumerated() {
+                let attrs: [NSAttributedString.Key: Any] = index == engine.selectedSegment ? [.underlineStyle: NSUnderlineStyle.single.rawValue, .backgroundColor: UIColor.systemGray4] : [:]
+                value.append(NSAttributedString(string: segment.text + " ", attributes: attrs))
+            }
+            composition.attributedText = value
+        } else { composition.attributedText = nil; composition.text = engine.reading }
+        candidateButtons.forEach { $0.removeFromSuperview() }; candidateButtons = []
         for (index, text) in engine.candidates.prefix(20).enumerated() {
             var configuration = UIButton.Configuration.plain(); configuration.title = text
             configuration.baseForegroundColor = .label
             configuration.background.backgroundColor = engine.converting && index == selectedCandidate ? .systemGray4 : .clear
             let button = UIButton(configuration: configuration, primaryAction: UIAction { [weak self] _ in
-                guard let self else { return }; self.session?.send(Data(self.engine.commit(index: index).utf8)); self.refreshComposition()
+                guard let self else { return }
+                if self.engine.converting { self.engine.selectCandidate(index); self.selectedCandidate = index }
+                else { self.session?.send(Data(self.engine.commit(index: index).utf8)) }
+                self.refreshComposition()
             })
-            button.accessibilityIdentifier = "candidate-\(index)"; candidateStack.addArrangedSubview(button)
+            button.accessibilityIdentifier = "candidate-\(index)"; candidateStack.addSubview(button); candidateButtons.append(button)
         }
-        candidateStack.sizeToFit(); candidates.contentSize = candidateStack.bounds.size
-        if candidateStack.arrangedSubviews.indices.contains(selectedCandidate) { candidates.scrollRectToVisible(candidateStack.arrangedSubviews[selectedCandidate].frame, animated: false) }
+        setNeedsLayout(); layoutIfNeeded()
+        if candidateButtons.indices.contains(selectedCandidate) { candidates.scrollRectToVisible(candidateButtons[selectedCandidate].frame, animated: false) }
     }
 }
 

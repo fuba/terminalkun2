@@ -16,12 +16,14 @@ public struct ConnectionProfile: Codable, Identifiable, Equatable, Sendable {
     public var jumpHost: String?
     public var startupCommand: String
     public var unsupportedOptions: [String]
+    public var agentForwarding: Bool?
     public var canConnect: Bool { unsupportedOptions.isEmpty }
     public var address: String { "\(user)@\(host)\(port == 22 ? "" : ":\(port)")" }
     public init(id: UUID = UUID(), name: String, host: String, user: String = "", port: Int = 22, favorite: Bool = false, keyID: UUID? = nil, jumpHost: String? = nil, startupCommand: String = "", unsupportedOptions: [String] = []) {
         self.id = id; self.name = name; self.host = host; self.user = user; self.port = port
         self.favorite = favorite; self.keyID = keyID; self.jumpHost = jumpHost
         self.startupCommand = startupCommand; self.unsupportedOptions = unsupportedOptions
+        self.agentForwarding = false
     }
     public func validate() throws {
         guard !host.isEmpty, !user.isEmpty, (1...65535).contains(port), !host.hasPrefix("-"),
@@ -37,8 +39,9 @@ public struct SavedKey: Codable, Identifiable, Equatable, Sendable {
     public var name: String
     public var publicKey: String
     public var createdAt: Date
+    public var hardwareBacked: Bool?
     public init(id: UUID = UUID(), name: String, publicKey: String, createdAt: Date = Date()) {
-        self.id = id; self.name = name; self.publicKey = publicKey; self.createdAt = createdAt
+        self.id = id; self.name = name; self.publicKey = publicKey; self.createdAt = createdAt; self.hardwareBacked = false
     }
 }
 
@@ -85,6 +88,18 @@ public struct AppConfiguration: Codable, Sendable {
     public var aiModel = ""
     public var sshConfigBookmark: Data?
     public init() {}
+    public func validate() throws {
+        guard version == 1, appearance.fontSize.isFinite, (10...32).contains(appearance.fontSize),
+              appearance.opacity.isFinite, (0.35...1).contains(appearance.opacity),
+              (1000...50000).contains(appearance.scrollback),
+              Set(profiles.map(\.id)).count == profiles.count,
+              Set(keys.map(\.id)).count == keys.count,
+              Set(sessions.map(\.id)).count == sessions.count,
+              Set(dictionary.map(\.id)).count == dictionary.count,
+              Set(shortcuts.map(\.action)).count == shortcuts.count else {
+            throw AppError.message("設定の版、表示範囲、または重複する ID を確認してください。")
+        }
+    }
 }
 
 public enum Shell {
@@ -123,7 +138,10 @@ public struct ShortcutBinding: Codable, Equatable, Identifiable, Sendable {
         .init("newTab", "t"), .init("closeTab", "w"), .init("connections", "k"),
         .init("settings", ","), .init("search", "f"), .init("nextTab", "]", [.command, .shift]),
         .init("previousTab", "[", [.command, .shift]), .init("paste", "v"), .init("copy", "c"),
-        .init("fontLarger", "+"), .init("fontSmaller", "-"), .init("fontReset", "0"),
-        .init("logging", "l", [.command, .shift]), .init("upload", "u", [.command, .shift])
+        .init("fontLarger", "="), .init("fontSmaller", "-"), .init("fontReset", "0"),
+        .init("logging", "l", [.command, .shift]), .init("upload", "u", [.command, .shift]),
+        .init("inputLanguage", " ", [.control]), .init("help", "?"),
+        .init("scrollPageUp", "u", [.command, .control]), .init("scrollPageDown", "d", [.command, .control]),
+        .init("scrollTop", "h", [.command, .control]), .init("scrollBottom", "e", [.command, .control])
     ]
 }

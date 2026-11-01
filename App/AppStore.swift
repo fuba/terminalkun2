@@ -7,7 +7,14 @@ import CoreText
 
 @MainActor
 final class AppStore: ObservableObject {
-    @Published var configuration = AppConfiguration() { didSet { if loaded { persist(); applyAppearance() } } }
+    @Published var configuration = AppConfiguration() {
+        didSet {
+            if loaded {
+                if oldValue.appearance.customKeyboard != configuration.appearance.customKeyboard { diagnostic(configuration.appearance.customKeyboard ? "keyboard programming" : "keyboard system") }
+                persist(); applyAppearance()
+            }
+        }
+    }
     @Published var sessions: [TerminalSession] = []
     @Published var selectedID: UUID?
     @Published var sheet: SheetRoute?
@@ -22,17 +29,22 @@ final class AppStore: ObservableObject {
     let documents: URL
     let logs: URL
     private var loaded = false
+    private var configurationValid = true
     private var modifiedAt: Date?
     private var configTimer: Timer?
     private let monitor = NWPathMonitor()
     private var lastNetworkAvailable = true
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var diagnostics: Diagnostics?
+    private var pendingShare: [URL]?
+    private var pendingConnection: (TerminalSession, ConnectionProfile)?
     private var authQueue: [(ConnectionProfile, CheckedContinuation<SSHCredentials, Error>)] = []
     var selected: TerminalSession? { sessions.first { $0.id == selectedID } }
     var sortedProfiles: [ConnectionProfile] {
         configuration.profiles.sorted { a, b in a.favorite == b.favorite ? a.name.localizedStandardCompare(b.name) == .orderedAscending : a.favorite }
     }
     init() {
+        setenv("SWIFTTERM_PROFILE_STATS", "1", 0)
         let fm = FileManager.default
         support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("TerminalKun2")
         documents = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -41,8 +53,8 @@ final class AppStore: ObservableObject {
             try fm.createDirectory(at: support, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try fm.createDirectory(at: logs, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try fm.createDirectory(at: documents, withIntermediateDirectories: true)
-            if fm.fileExists(atPath: configURL.path) { configuration = try JSONDecoder().decode(AppConfiguration.self, from: Data(contentsOf: configURL)); modifiedAt = modificationDate() }
-        } catch { self.error = "設定を読み込めませんでした。元のファイルは保持しています。\n" + error.localizedDescription }
+            if fm.fileExists(atPath: configURL.path) { let config = try JSONDecoder().decode(AppConfiguration.self, from: Data(contentsOf: configURL)); try config.validate(); configuration = config; modifiedAt = modificationDate() }
+        } catch { configurationValid = false; modifiedAt = modificationDate(); self.error = "設定を読み込めませんでした。元のファイルを修正するまで保存を停止します。\n" + error.localizedDescription }
         loaded = true
         registerFont()
         for record in configuration.sessions {
@@ -58,10 +70,12 @@ final class AppStore: ObservableObject {
         } }
         monitor.start(queue: DispatchQueue(label: "dev.fuba.terminalkun2.network"))
         diagnostic("launch \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") ?? "")")
+        diagnostics = Diagnostics(directory: logs)
         applyAppearance()
     }
     var configURL: URL { support.appendingPathComponent("config.json") }
     func persist() {
+        guard configurationValid else { return }
         do {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(configuration).write(to: configURL, options: [.atomic, .completeFileProtection])
@@ -77,12 +91,17 @@ final class AppStore: ObservableObject {
         guard let date = modificationDate(), date != modifiedAt else { return }
         do {
             let config = try JSONDecoder().decode(AppConfiguration.self, from: Data(contentsOf: configURL))
-            modifiedAt = date; configuration = config; error = nil
-        } catch { modifiedAt = date; self.error = "設定ファイルが不正です。直前の設定を継続します。\n" + error.localizedDescription }
+            try config.validate()
+            modifiedAt = date; configurationValid = true; configuration = config; error = nil
+        } catch { modifiedAt = date; configurationValid = false; self.error = "設定ファイルが不正です。直前の設定を継続し、修正されるまで保存を停止します。\n" + error.localizedDescription }
     }
     private func applyAppearance() {
         UIApplication.shared.isIdleTimerDisabled = configuration.appearance.keepScreenAwake
-        for session in sessions { session.applyAppearance(configuration.appearance) }
+        for session in sessions {
+            session.applyAppearance(configuration.appearance)
+            let permitted = configuration.profiles.first(where: { $0.id == session.profileID })?.agentForwarding == true
+            session.connection.setAgentActive(permitted && UIApplication.shared.applicationState == .active)
+        }
     }
     func registerFont() {
         let url = support.appendingPathComponent("terminal-font")
@@ -97,7 +116,15 @@ final class AppStore: ObservableObject {
     func connect(_ profile: ConnectionProfile, existing: TerminalSession? = nil) {
         let session = existing ?? TerminalSession(record: .init(profileID: profile.id, title: profile.name), store: self)
         if existing == nil { sessions.append(session) }
-        selectedID = session.id; sheet = nil; snapshot(); session.connect(profile)
+        selectedID = session.id; snapshot()
+        if sheet != nil { pendingConnection = (session, profile); sheet = nil }
+        else { session.connect(profile) }
+    }
+    func didDismissSheet() {
+        if let urls = pendingShare { pendingShare = nil; shareURLs = urls; showShare = true }
+        if let (session, profile) = pendingConnection {
+            pendingConnection = nil; session.connect(profile)
+        }
     }
     func close(_ session: TerminalSession) {
         session.stop(); sessions.removeAll { $0.id == session.id }
@@ -110,6 +137,10 @@ final class AppStore: ObservableObject {
     }
     func removeProfile(_ id: UUID) { configuration.profiles.removeAll { $0.id == id } }
     func authenticate(_ profile: ConnectionProfile) async throws -> SSHCredentials {
+        if let key = configuration.keys.first(where: { $0.id == profile.keyID }), key.hardwareBacked == true {
+            guard let data = try SecureStore.get(key.id.uuidString) else { throw AppError.message("Secure Enclave 鍵が見つかりません。") }
+            return SSHCredentials(hardwareKey: data)
+        }
         if let id = profile.keyID, let data = try SecureStore.get(id.uuidString), let pem = String(data: data, encoding: .utf8), (try? KeyMaterial.authentication(pem: pem, passphrase: "", user: profile.user)) != nil {
             return SSHCredentials(privateKey: pem)
         }
@@ -149,7 +180,7 @@ final class AppStore: ObservableObject {
         let result = try SSHConfig.parse(String(contentsOf: url, encoding: .utf8))
         for var profile in result.profiles {
             if let i = configuration.profiles.firstIndex(where: { $0.name == profile.name }) {
-                let old = configuration.profiles[i]; profile.id = old.id; profile.favorite = old.favorite; profile.keyID = old.keyID
+                let old = configuration.profiles[i]; profile.id = old.id; profile.favorite = old.favorite; profile.keyID = old.keyID; profile.agentForwarding = old.agentForwarding; profile.startupCommand = old.startupCommand
                 configuration.profiles[i] = profile
             } else { configuration.profiles.append(profile) }
         }
@@ -162,14 +193,22 @@ final class AppStore: ObservableObject {
         catch { self.error = "SSH config を同期できませんでした。\n" + error.localizedDescription }
     }
     func sceneChanged(_ phase: ScenePhase) {
+        for session in sessions {
+            let permitted = configuration.profiles.first(where: { $0.id == session.profileID })?.agentForwarding == true
+            session.connection.setAgentActive(phase == .active && permitted)
+        }
         if phase == .background {
             snapshot(); sessions.forEach { $0.resetInput() }
             if sessions.contains(where: { $0.state == .connected }), backgroundTask == .invalid {
-                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish SSH writes") { [weak self] in Task { @MainActor in self?.endBackgroundTask() } }
+                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish SSH writes") { [weak self] in Task { @MainActor in self?.expireBackgroundTask() } }
             }
         } else if phase == .active {
             endBackgroundTask(); syncSSHConfig(); sessions.filter { $0.state == .waiting }.forEach { $0.retryNow() }
         }
+    }
+    private func expireBackgroundTask() {
+        sessions.forEach { $0.suspendConnection() }
+        endBackgroundTask()
     }
     private func endBackgroundTask() { if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid } }
     func open(_ url: URL) {
@@ -185,6 +224,10 @@ final class AppStore: ObservableObject {
         if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 2 * 1024 * 1024 { try? Data().write(to: url) }
         if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600]) }
         if let handle = try? FileHandle(forWritingTo: url) { defer { try? handle.close() }; _ = try? handle.seekToEnd(); try? handle.write(contentsOf: data) }
+    }
+    func share(_ urls: [URL]) {
+        if sheet != nil { pendingShare = urls; sheet = nil }
+        else { shareURLs = urls; showShare = true }
     }
 }
 

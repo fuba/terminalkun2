@@ -26,11 +26,13 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     private var history: [String] = []
     private var historyIndex = 0
     private var credentials: SSHCredentials?
+    private var authenticatedProfile: ConnectionProfile?
     private var userClosed = false
     private var reconnectAttempt = 0
     private let log: SessionLog
     private var appearance: Appearance?
-    private var prefix = "\u{2}"
+    private var prefix: String?
+    private var configuringTmux = false
     private var cols = 80, rows = 24
     lazy var keyboard = ProgramKeyboard(session: self)
 
@@ -51,11 +53,15 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.linkReporting = .implicit
         terminal.inputAccessoryView = TerminalAccessoryBar(session: self)
         applyAppearance(store.configuration.appearance)
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["TERMINALKUN2_UI_TESTS"] == "1" { terminal.setCursorStyle(.steadyBlock) }
+        #endif
         do { try terminal.setUseMetal(true) } catch { store.diagnostic("Metal unavailable; native renderer selected") }
         draft.append(record.draft)
         if profileID == nil { startLocal() }
     }
     func applyAppearance(_ appearance: Appearance) {
+        if let store { keyboard.setWords(store.configuration.dictionary) }
         guard self.appearance != appearance else { return }
         let previous = self.appearance; self.appearance = appearance
         let theme = TerminalPalette.named(appearance.theme)
@@ -64,8 +70,15 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.caretColor = theme.foreground
         terminal.backgroundOpacity = CGFloat(max(0.35, min(1, appearance.opacity)))
         terminal.font = UIFont(name: appearance.fontName, size: CGFloat(appearance.fontSize)) ?? .monospacedSystemFont(ofSize: CGFloat(appearance.fontSize), weight: .regular)
-        if previous?.customKeyboard != appearance.customKeyboard { resetInput(); terminal.inputView = appearance.customKeyboard ? keyboard : nil; terminal.reloadInputViews() }
-        if let store { keyboard.setWords(store.configuration.dictionary) }
+        if previous?.scrollback != appearance.scrollback { terminal.changeScrollback(appearance.scrollback) }
+        if previous?.customKeyboard != appearance.customKeyboard {
+            let focused = terminal.isFirstResponder
+            keyboard.resetInput(); terminal.inputView = appearance.customKeyboard ? keyboard : nil; terminal.reloadInputViews()
+            if focused { _ = terminal.becomeFirstResponder() }
+        }
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["TERMINALKUN2_UI_TESTS"] == "1" { terminal.setCursorStyle(.steadyBlock) }
+        #endif
     }
     func startLocal() {
         guard local == nil, let store else { return }
@@ -78,13 +91,19 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     }
     func connect(_ profile: ConnectionProfile) {
         guard state != .connecting, state != .connected else { return }
-        userClosed = false; reconnectAttempt = 0; connectionTask?.cancel()
+        userClosed = false; reconnectAttempt = 0
+        let previous = connectionTask; previous?.cancel(); state = .connecting
         connectionTask = Task { [weak self] in
             guard let self, let store = self.store else { return }
+            await connection.close(); await previous?.value
+            guard !Task.isCancelled else { return }
             var wasConnected = false
             do {
                 try profile.validate()
-                let auth = try await store.authenticate(profile); credentials = auth
+                let auth: SSHCredentials
+                if authenticatedProfile == profile, let saved = credentials { auth = saved }
+                else { auth = try await store.authenticate(profile) }
+                credentials = auth; authenticatedProfile = profile
                 var jumps: [(ConnectionProfile, SSHCredentials)] = []
                 var visited: Set<String> = [profile.name]
                 var next = profile.jumpHost
@@ -102,18 +121,25 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                                 try await store.verifyHost(profile: profile, key: key)
                             }, onReady: { [weak self] in
                                 guard let self else { return }
+                                let firstConnection = !wasConnected
                                 self.state = .connected; self.reconnectAttempt = 0; wasConnected = true
+                                self.prefix = nil
+                                self.terminal.feed(text: "\u{1b}[?1049l\u{1b}[!p\u{1b}[?1000l\u{1b}[?1002l\u{1b}[?1003l\u{1b}[?1006l\u{1b}[?2004l\u{1b}[?1l")
                                 self.recoveredDraft = self.draft.take(); self.store?.snapshot()
-                                if self.store?.configuration.appearance.tmuxMouse == true { Task { await self.configureTmux() } }
-                                if !profile.startupCommand.isEmpty && !wasConnected { self.send(Data((profile.startupCommand + "\r").utf8)) }
+                                Task { await self.configureTmux() }
+                                if !profile.startupCommand.isEmpty && firstConnection { self.send(Data((profile.startupCommand + "\r").utf8)) }
                             }, onData: { [weak self] in self?.output($0) })
                         if !Task.isCancelled { state = .idle; statusMessage = "リモートシェルが終了しました。" }
                         break
                     } catch {
                         if Task.isCancelled || userClosed { break }
                         statusMessage = error.localizedDescription
-                        let trustFailure = error is SSHFailure || statusMessage.contains("ホスト鍵")
+                        if store.hostPrompt?.profile.id == profile.id { store.acceptHost(false) }
+                        let trustFailure = (error as? SSHFailure).map { if case .hostKeyRejected = $0 { return true }; return false } ?? statusMessage.contains("ホスト鍵")
+                        let authenticationFailure = String(describing: error).lowercased().contains("authentication")
+                        if authenticationFailure || !wasConnected { credentials = nil; authenticatedProfile = nil }
                         guard store.configuration.appearance.autoReconnect,
+                              !authenticationFailure,
                               ReconnectPolicy.shouldRetry(wasConnected: wasConnected, userClosed: userClosed, trustFailure: trustFailure) else { state = .idle; break }
                         state = .waiting
                         let delay = ReconnectPolicy.delay(attempt: reconnectAttempt); reconnectAttempt += 1
@@ -121,7 +147,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
                         try await Task.sleep(for: .seconds(delay))
                     }
                 }
-            } catch { if !Task.isCancelled { statusMessage = error.localizedDescription; state = .idle } }
+            } catch { if !Task.isCancelled { statusMessage = error.localizedDescription; state = .idle; credentials = nil; authenticatedProfile = nil } }
         }
     }
     func retryNow() {
@@ -129,8 +155,14 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
               let profile = store?.configuration.profiles.first(where: { $0.id == profileID }) else { return }
         connectionTask?.cancel(); state = .idle; connect(profile)
     }
+    func suspendConnection() {
+        guard state == .connected else { return }
+        connectionTask?.cancel(); state = .waiting
+        statusMessage = "アプリに戻ると再接続します。"
+        Task { await connection.close() }
+    }
     func stop() {
-        userClosed = true; connectionTask?.cancel(); localTask?.cancel(); credentials = nil
+        userClosed = true; connectionTask?.cancel(); localTask?.cancel(); credentials = nil; authenticatedProfile = nil
         resetInput(); log.stop(); logging = false; state = .closed
         Task { await connection.close() }
     }
@@ -177,14 +209,18 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         }
     }
     func configureTmux() async {
+        guard state == .connected, !configuringTmux else { return }
+        configuringTmux = true; defer { configuringTmux = false }
         do {
-            _ = try await connection.execute("tmux set -g mouse on 2>/dev/null || true")
+            if store?.configuration.appearance.tmuxMouse == true { _ = try await connection.execute("tmux set -g mouse on 2>/dev/null || true") }
             let result = try await connection.execute("tmux show-option -gv prefix 2>/dev/null || true").trimmingCharacters(in: .whitespacesAndNewlines)
-            if result.hasPrefix("C-"), result.count == 3 { prefix = KeyEncoder.text(String(result.suffix(1)), modifiers: [.control]) }
-            else if result == "`" { prefix = "`" }
+            prefix = TmuxPrefix.parse(result)
         } catch { store?.diagnostic("tmux setup unavailable") }
     }
-    func tmuxWindow(_ next: Bool) { if state == .connected { send(Data((prefix + (next ? "n" : "p")).utf8)) } }
+    func tmuxWindow(_ next: Bool) {
+        guard state == .connected, let prefix, let mode = terminal.terminalInputStateSnapshot()?.mouseMode, mode != .off else { return }
+        send(Data((prefix + (next ? "n" : "p")).utf8))
+    }
     func action(_ action: String) {
         guard let store else { return }
         switch action {
@@ -201,6 +237,12 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         case "fontReset": store.configuration.appearance.fontSize = 14
         case "logging": toggleLog()
         case "upload": terminal.onUpload?()
+        case "inputLanguage": keyboard.handle("language")
+        case "help": store.sheet = .help
+        case "scrollPageUp": terminal.scrollUp(lines: max(1, rows - 1))
+        case "scrollPageDown": terminal.scrollDown(lines: max(1, rows - 1))
+        case "scrollTop": terminal.scroll(toPosition: 0)
+        case "scrollBottom": terminal.scroll(toPosition: 1)
         default: break
         }
     }
@@ -211,6 +253,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) { self.directory = directory.flatMap { URL(string: $0)?.path } ?? directory ?? "" }
     func send(source: TerminalView, data: ArraySlice<UInt8>) { send(Data(data)) }
     func scrolled(source: TerminalView, position: Double) {}
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
     func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
         guard let url = URL(string: link), ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return }
         UIApplication.shared.open(url)

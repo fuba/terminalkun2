@@ -24,6 +24,7 @@ final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
     override var keyCommands: [UIKeyCommand]? {
         let commands = session?.store?.configuration.shortcuts.compactMap { binding -> UIKeyCommand? in
             guard !binding.input.isEmpty else { return nil }
+            if binding.action == "inputLanguage", session?.store?.configuration.appearance.customKeyboard != true { return nil }
             let command = UIKeyCommand(title: binding.action, action: #selector(shortcut(_:)), input: binding.input, modifierFlags: binding.modifiers.uiFlags, propertyList: binding.action)
             command.wantsPriorityOverSystemBehavior = true; return command
         } ?? []
@@ -49,6 +50,10 @@ final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
     @objc private func oneFingerSwipe(_ gesture: UISwipeGestureRecognizer) {
         guard session?.state == .connected else { return }
         session?.tmuxWindow(gesture.direction == .left)
+    }
+    nonisolated override func mouseModeChanged(source: Terminal) {
+        super.mouseModeChanged(source: source)
+        Task { @MainActor [weak self] in await self?.session?.configureTmux() }
     }
     @objc private func twoFingerSwipe(_ gesture: UISwipeGestureRecognizer) { session?.store?.nextTab(gesture.direction == .left ? 1 : -1) }
     @objc private func pinch(_ gesture: UIPinchGestureRecognizer) {

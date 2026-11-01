@@ -35,7 +35,7 @@ public enum KeyEncoder {
     private static let shifted = Dictionary(uniqueKeysWithValues: zip(Array("`1234567890-=[]\\;',./"), Array("~!@#$%^&*()_+{}|:\"<>?")))
     public static func text(_ value: String, modifiers: Modifiers) -> String {
         var text = value
-        if modifiers.contains(.shift) { text = String(value.map { shifted[$0] ?? Character(String($0).uppercased()) }) }
+        if modifiers.contains(.shift) { text = value.map { shifted[$0].map(String.init) ?? String($0).uppercased() }.joined() }
         if modifiers.contains(.control), text.utf8.count == 1, let byte = text.uppercased().utf8.first {
             if byte >= 64 && byte <= 95 { text = String(UnicodeScalar(byte & 31)) }
             else if byte == 32 { text = "\0" }

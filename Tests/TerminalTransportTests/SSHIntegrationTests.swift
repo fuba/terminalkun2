@@ -49,7 +49,8 @@ final class SSHIntegrationTests: XCTestCase {
         }
         XCTAssertTrue(ready, (try? String(contentsOf: logURL, encoding: .utf8)) ?? "sshd did not start")
         guard ready else { return }
-        let profile = ConnectionProfile(name: "loopback", host: "127.0.0.1", user: NSUserName(), port: port)
+        var profile = ConnectionProfile(name: "loopback", host: "127.0.0.1", user: NSUserName(), port: port)
+        profile.agentForwarding = true
         let pem = try String(contentsOf: folder.appendingPathComponent("client"), encoding: .utf8)
         let credentials = SSHCredentials(privateKey: pem, passphrase: "integration-passphrase")
         let rejected = SSHConnection()
@@ -60,15 +61,19 @@ final class SSHIntegrationTests: XCTestCase {
         } catch { /* Expected: the host validator rejects the real SSH handshake. */ }
 
         let connection = SSHConnection(), authenticated = expectation(description: "real PTY ready"), outputReady = expectation(description: "ordered Japanese output")
-        var received = Data(), completed = false
+        let forwarded = expectation(description: "real OpenSSH uses the forwarded agent")
+        var received = Data(), completed = false, agentCompleted = false
         let task = Task { @MainActor in
             try await connection.run(profile: profile, credentials: credentials, cols: 80, rows: 24,
                 verify: { _, key in XCTAssertEqual(key, hostPublic) },
                 onReady: { authenticated.fulfill() }, onData: { data in
                     received.append(data)
                     if !completed && String(decoding: received, as: UTF8.self).contains("DONE-20-日本語") { completed = true; outputReady.fulfill() }
+                    if !agentCompleted && String(decoding: received, as: UTF8.self).contains("FORWARDED-AGENT-OK") { agentCompleted = true; forwarded.fulfill() }
                 })
         }
+        let expiry = Task { @MainActor in try? await Task.sleep(for: .seconds(30)); if !Task.isCancelled { await connection.close() } }
+        defer { expiry.cancel() }
         defer { task.cancel(); Task { await connection.close() } }
         await fulfillment(of: [authenticated], timeout: 20)
         guard connection.connected else { XCTFail("SSH did not connect"); return }
@@ -91,8 +96,36 @@ final class SSHIntegrationTests: XCTestCase {
         XCTAssertEqual(dimensions, "verified")
         _ = try await connection.execute("rm -f -- " + Shell.quote(uploaded))
         _ = try await connection.execute("rmdir -- " + Shell.quote(URL(fileURLWithPath: uploaded).deletingLastPathComponent().path))
+        let known = folder.appendingPathComponent("known_hosts")
+        try "[127.0.0.1]:\(port) \(hostPublic)\n".write(to: known, atomically: true, encoding: .utf8)
+        let nested = "ssh -n -o UserKnownHostsFile=" + Shell.quote(known.path) + " -o StrictHostKeyChecking=yes -o IdentityFile=/dev/null -o PreferredAuthentications=publickey -p \(port) " + Shell.quote(NSUserName() + "@127.0.0.1") + " 'printf FORWARDED-AGENT-OK'\r"
+        connection.send(Data(nested.utf8))
+        await fulfillment(of: [forwarded], timeout: 15)
+        FileHandle.standardError.write(Data("SSH_TEST_STAGE=agent-authenticated\n".utf8))
         connection.send(Data("exit\r".utf8))
         try await task.value
+        FileHandle.standardError.write(Data("SSH_TEST_STAGE=first-connection-finished\n".utf8))
+
+        // OpenSSH rejects legacy RSA/SHA-1 by default; this must use RSA/SHA-256.
+        try run("/usr/bin/ssh-keygen", ["-q", "-t", "rsa", "-b", "3072", "-N", "rsa-passphrase", "-f", folder.appendingPathComponent("rsa").path])
+        let rsaPublic = try Data(contentsOf: folder.appendingPathComponent("rsa.pub"))
+        let authorized = try FileHandle(forWritingTo: folder.appendingPathComponent("authorized_keys"))
+        _ = try authorized.seekToEnd(); try authorized.write(contentsOf: rsaPublic); try authorized.close()
+        let rsaPEM = try String(contentsOf: folder.appendingPathComponent("rsa"), encoding: .utf8)
+        let rsaConnection = SSHConnection()
+        var rsaAuthenticated = false
+        try await rsaConnection.run(profile: profile, credentials: SSHCredentials(privateKey: rsaPEM, passphrase: "rsa-passphrase"), cols: 80, rows: 24,
+            verify: { _, key in XCTAssertEqual(key, hostPublic) },
+            onReady: { rsaAuthenticated = true; rsaConnection.send(Data("exit\r".utf8)) }, onData: { _ in })
+        XCTAssertTrue(rsaAuthenticated)
+
+        let jump = ConnectionProfile(name: "jump", host: "127.0.0.1", user: NSUserName(), port: port)
+        let throughJump = SSHConnection()
+        var jumpAuthenticated = false
+        try await throughJump.run(profile: profile, credentials: credentials, jumps: [(jump, credentials)], cols: 80, rows: 24,
+            verify: { _, key in XCTAssertEqual(key, hostPublic) },
+            onReady: { jumpAuthenticated = true; throughJump.send(Data("exit\r".utf8)) }, onData: { _ in })
+        XCTAssertTrue(jumpAuthenticated)
     }
     private func run(_ executable: String, _ arguments: [String]) throws {
         let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = arguments

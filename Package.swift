@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.99.1", traits: []),
-        .package(url: "https://github.com/orlandos-nl/Citadel.git", exact: "0.12.1"),
+        .package(path: "Vendor/Citadel"),
         .package(url: "https://github.com/azooKey/AzooKeyKanaKanjiConverter", exact: "0.11.2", traits: [])
     ],
     targets: [
@@ -20,6 +20,7 @@ let package = Package(
         .target(name: "TerminalTransport", dependencies: ["TerminalCore", .product(name: "Citadel", package: "Citadel")]),
         .target(name: "TerminalIME", dependencies: ["TerminalCore", .product(name: "KanaKanjiConverterModuleWithDefaultDictionary", package: "AzooKeyKanaKanjiConverter")]),
         .target(name: "TerminalRenderer", dependencies: [.product(name: "SwiftTerm", package: "SwiftTerm")]),
+        .executableTarget(name: "SSHFixture", dependencies: [.product(name: "Citadel", package: "Citadel")], path: "Tools/SSHFixture"),
         .testTarget(name: "TerminalCoreTests", dependencies: ["TerminalCore"]),
         .testTarget(name: "TerminalTransportTests", dependencies: ["TerminalTransport"]),
         .testTarget(name: "TerminalIMETests", dependencies: ["TerminalIME"]),

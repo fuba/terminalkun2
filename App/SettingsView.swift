@@ -22,6 +22,8 @@ struct SettingsView: View {
                 }
                 Section("入力") {
                     Toggle("プログラミング用キーボード", isOn: $store.configuration.appearance.customKeyboard)
+                        .accessibilityIdentifier("customKeyboardMode")
+                        .accessibilityValue(store.configuration.appearance.customKeyboard ? "オン" : "オフ")
                     NavigationLink("ユーザー辞書") { DictionaryView(embedded: true) }
                     NavigationLink("キー割り当て") { ShortcutSettingsView() }
                 }
@@ -31,16 +33,16 @@ struct SettingsView: View {
                     NavigationLink("秘密鍵・公開鍵") { KeyListView(embedded: true) }
                     NavigationLink("信頼したホスト鍵") { KnownHostsView() }
                 }
-                Section("コマンド生成 — Ollama") {
-                    TextField("サーバー URL（https://…）", text: $store.configuration.aiEndpoint).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Section("コマンド生成") {
+                    TextField("API URL（Ollama / OpenAI 互換）", text: $store.configuration.aiEndpoint).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                     TextField("モデル名", text: $store.configuration.aiModel).textInputAutocapitalization(.never).autocorrectionDisabled()
                     Text("入力した依頼だけを指定サーバーに送信します。生成結果は確認後に入力欄へ挿入し、改行は送信しません。").font(.callout).foregroundStyle(.secondary)
                 }
                 Section {
                     NavigationLink("使い方") { HelpView(embedded: true) }
-                    Button("設定 JSON を共有") { store.shareURLs = [store.configURL]; store.showShare = true }
+                    Button("設定 JSON を共有") { store.share([store.configURL]) }
                     Button("診断ログを共有") {
-                        store.shareURLs = (try? FileManager.default.contentsOfDirectory(at: store.logs, includingPropertiesForKeys: nil).filter { $0.lastPathComponent == "app.log" }) ?? []; store.showShare = true
+                        store.share((try? FileManager.default.contentsOfDirectory(at: store.logs, includingPropertiesForKeys: nil).filter { !$0.lastPathComponent.hasPrefix("session-") }) ?? [])
                     }
                     Text("terminalkun2 \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") · MIT").foregroundStyle(.secondary)
                 }
@@ -53,7 +55,11 @@ struct SettingsView: View {
                     let data = try Data(contentsOf: url)
                     guard data.count < 32 * 1024 * 1024, let provider = CGDataProvider(data: data as CFData), let font = CGFont(provider), let name = font.postScriptName else { throw AppError.message("有効な TTF / OTF フォントを選択してください。") }
                     var error: Unmanaged<CFError>?
-                    if !CTFontManagerRegisterGraphicsFont(font, &error), (error?.takeRetainedValue() as Error?) != nil { /* An already registered font is still usable. */ }
+                    let registered = CTFontManagerRegisterGraphicsFont(font, &error)
+                    let registrationError = error?.takeRetainedValue()
+                    guard registered || UIFont(name: name as String, size: 14) != nil else {
+                        throw registrationError.map { $0 as Error } ?? AppError.message("フォントを登録できませんでした。")
+                    }
                     try data.write(to: store.support.appendingPathComponent("terminal-font"), options: [.atomic, .completeFileProtection])
                     store.configuration.appearance.fontName = name as String
                 } catch { store.error = error.localizedDescription }
@@ -93,13 +99,16 @@ struct ShortcutSettingsView: View {
         if let index = store.configuration.shortcuts.firstIndex(where: { $0.action == action }) { store.configuration.shortcuts[index].input = input; store.configuration.shortcuts[index].modifiers = modifiers }
     }
     static func chord(_ b: ShortcutBinding) -> String { b.input.isEmpty ? "未割り当て" : (b.modifiers.contains(.control) ? "⌃" : "") + (b.modifiers.contains(.alt) ? "⌥" : "") + (b.modifiers.contains(.shift) ? "⇧" : "") + (b.modifiers.contains(.command) ? "⌘" : "") + b.input.uppercased() }
-    static func label(_ action: String) -> String { ["newTab": "新しいタブ", "closeTab": "タブを閉じる", "connections": "接続先", "settings": "設定", "search": "検索", "nextTab": "次のタブ", "previousTab": "前のタブ", "paste": "貼り付け", "copy": "コピー", "fontLarger": "文字を拡大", "fontSmaller": "文字を縮小", "fontReset": "文字サイズを戻す", "logging": "ログの開始・停止", "upload": "ファイル送信"][action] ?? action }
+    static func label(_ action: String) -> String { ["newTab": "新しいタブ", "closeTab": "タブを閉じる", "connections": "接続先", "settings": "設定", "search": "検索", "nextTab": "次のタブ", "previousTab": "前のタブ", "paste": "貼り付け", "copy": "コピー", "fontLarger": "文字を拡大", "fontSmaller": "文字を縮小", "fontReset": "文字サイズを戻す", "logging": "ログの開始・停止", "upload": "ファイル送信", "inputLanguage": "英数・日本語", "help": "使い方", "scrollPageUp": "前のページ", "scrollPageDown": "次のページ", "scrollTop": "履歴の先頭", "scrollBottom": "履歴の末尾"][action] ?? action }
 }
 
 struct ChordEditor: View {
     let save: (String, Modifiers) -> Void
     @State private var text = ""
-    @State private var command = true, control = false, alt = false, shift = false
+    @State private var command = true
+    @State private var control = false
+    @State private var alt = false
+    @State private var shift = false
     var body: some View {
         VStack {
             TextField("キー", text: $text).textFieldStyle(.roundedBorder).textInputAutocapitalization(.never).autocorrectionDisabled()

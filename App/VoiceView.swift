@@ -62,9 +62,9 @@ struct VoiceView: View {
                     Button("文字として端末へ挿入") { insert(speech.transcript) }.disabled(speech.transcript.isEmpty || store.selected == nil)
                     Button("定型コマンド候補を作成") {
                         if let command = CommandSuggestion.offline(speech.transcript) { generated = command; error = nil }
-                        else { error = "定型候補がありません。自由文の生成には Ollama を設定してください。" }
+                        else { error = "定型候補がありません。自由文の生成には 生成 API を設定してください。" }
                     }.disabled(speech.transcript.isEmpty)
-                    Button("Ollama でコマンドを生成") {
+                    Button("AI でコマンドを生成") {
                         generating = true; error = nil
                         Task {
                             defer { generating = false }
@@ -86,5 +86,9 @@ struct VoiceView: View {
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完了") { dismiss() } } }
         }.onDisappear { speech.stop() }
     }
-    private func insert(_ value: String) { store.selected?.terminal.pasteText(value); dismiss() }
+    private func insert(_ value: String) {
+        let line = value.components(separatedBy: .newlines).joined(separator: " ")
+        let clean = String(String.UnicodeScalarView(line.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) }))
+        store.selected?.terminal.pasteText(clean); dismiss()
+    }
 }

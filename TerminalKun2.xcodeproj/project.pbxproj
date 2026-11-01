@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0DCE3024415A5E16C03872F3 /* TerminalCore in Frameworks */ = {isa = PBXBuildFile; productRef = C826A186415692CAD5654717 /* TerminalCore */; };
+		0DD58A6EAE4432F9E82FAE94 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DAEFC456A8175CB424471 /* Diagnostics.swift */; };
+		1B4E8613EFEB9BA586F7FE76 /* AppIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 780D0484115A6BF64DA57848 /* AppIcon.svg */; };
 		1D237B1EA422F7B89A38E41B /* ProgramKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */; };
 		24B88A8EC1EE9D7D4A108693 /* ConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */; };
 		2592B571466C3F55AC69EB46 /* TerminalRenderer in Frameworks */ = {isa = PBXBuildFile; productRef = 72AEABE957941C527E776CD9 /* TerminalRenderer */; };
@@ -17,13 +19,17 @@
 		4513EB73A883CD2493FB714E /* Prompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */; };
 		5AC416E3DCAE817C5BA8B7AC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */; };
 		642ED0989DA3FD43E0B72B63 /* TerminalKun2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00447403DAB03D130456273E /* TerminalKun2App.swift */; };
+		7025BCCB8D57E0577C827451 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */; };
 		772D3B4B7CFD0C15D08FD853 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */; };
 		7C9A5E663E4ED2450259E5A5 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8566351EB2B9730433B3DDDB /* WorkspaceView.swift */; };
+		899B5BB85B23694FC8B1C7F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EEB6FC0495A2DC547576699 /* Assets.xcassets */; };
 		8A2444856EBDBB91DD7E01C8 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CDB75C1A8730C58C45FACD /* SecureStore.swift */; };
 		9A024912671C57ACB47508CD /* TerminalIME in Frameworks */ = {isa = PBXBuildFile; productRef = 666422C51122340156BDD9CF /* TerminalIME */; };
 		9B193867D79EC9983BFF4B10 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5DB6358A14396E6F11A1FC1 /* AppStore.swift */; };
 		A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */; };
 		A1B465DC364E1148AA145020 /* TerminalTransport in Frameworks */ = {isa = PBXBuildFile; productRef = B22DCF3968A66CB6C4A25059 /* TerminalTransport */; };
+		CC6F9141BBB2AC43248CABEB /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */; };
+		E987D08DE334A673548A801C /* Mark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 5E5E8C8C22F723E84FA35E9F /* Mark.svg */; };
 		EB790067DEF1668EE312A73E /* VoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5F4951B81F7E554387B5E /* VoiceView.swift */; };
 		F6D41856A8B68C323DBD4383 /* TerminalKun2UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64383E950DA8640375F1A18 /* TerminalKun2UITests.swift */; };
 /* End PBXBuildFile section */
@@ -42,19 +48,26 @@
 		00447403DAB03D130456273E /* TerminalKun2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKun2App.swift; sourceTree = "<group>"; };
 		00534E178461582FC03C1110 /* SessionTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTerminalView.swift; sourceTree = "<group>"; };
 		0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
+		26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramKeyboard.swift; sourceTree = "<group>"; };
 		3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		40CDB75C1A8730C58C45FACD /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		42AEF36D6EF139720A1B6949 /* Simulator.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Simulator.entitlements; sourceTree = "<group>"; };
 		45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
 		470CE9976BDA9D4EC7A05604 /* TerminalKun2.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TerminalKun2.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E5E8C8C22F723E84FA35E9F /* Mark.svg */ = {isa = PBXFileReference; path = Mark.svg; sourceTree = "<group>"; };
+		780D0484115A6BF64DA57848 /* AppIcon.svg */ = {isa = PBXFileReference; path = AppIcon.svg; sourceTree = "<group>"; };
 		7C07E007ECD43AE302D366BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		8566351EB2B9730433B3DDDB /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
+		9EEB6FC0495A2DC547576699 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AD345BD05636974986A14EEA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CBB050C70D49B09ADD96E5DA /* KeyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyListView.swift; sourceTree = "<group>"; };
 		D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prompts.swift; sourceTree = "<group>"; };
 		D5DB6358A14396E6F11A1FC1 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsView.swift; sourceTree = "<group>"; };
 		DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DD1DAEFC456A8175CB424471 /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
+		E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ThirdPartyNotices.txt; sourceTree = "<group>"; };
 		E2A5F4951B81F7E554387B5E /* VoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceView.swift; sourceTree = "<group>"; };
 		E434C42F7EA1BFD7C464363C /* terminalkun2 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = terminalkun2; path = .; sourceTree = SOURCE_ROOT; };
 		E64383E950DA8640375F1A18 /* TerminalKun2UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKun2UITests.swift; sourceTree = "<group>"; };
@@ -75,6 +88,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3A489D9A1133FC8FBC1D7FC9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				780D0484115A6BF64DA57848 /* AppIcon.svg */,
+				9EEB6FC0495A2DC547576699 /* Assets.xcassets */,
+				5E5E8C8C22F723E84FA35E9F /* Mark.svg */,
+				26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */,
+				E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		40DA4784858751A5AE0921EF /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -97,6 +122,7 @@
 			children = (
 				FD01AC5F41FA0038F8FD3321 /* App */,
 				40DA4784858751A5AE0921EF /* Packages */,
+				3A489D9A1133FC8FBC1D7FC9 /* Resources */,
 				E849A83CD13E1039E090C7AC /* UITests */,
 				706A60B45C01D7FD3F64BE22 /* Products */,
 			);
@@ -115,6 +141,7 @@
 			children = (
 				D5DB6358A14396E6F11A1FC1 /* AppStore.swift */,
 				D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */,
+				DD1DAEFC456A8175CB424471 /* Diagnostics.swift */,
 				45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */,
 				7C07E007ECD43AE302D366BF /* HelpView.swift */,
 				AD345BD05636974986A14EEA /* Info.plist */,
@@ -124,6 +151,7 @@
 				40CDB75C1A8730C58C45FACD /* SecureStore.swift */,
 				00534E178461582FC03C1110 /* SessionTerminalView.swift */,
 				DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */,
+				42AEF36D6EF139720A1B6949 /* Simulator.entitlements */,
 				00447403DAB03D130456273E /* TerminalKun2App.swift */,
 				0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */,
 				E2A5F4951B81F7E554387B5E /* VoiceView.swift */,
@@ -158,6 +186,7 @@
 			buildConfigurationList = 875FE0FD1283402C164B5084 /* Build configuration list for PBXNativeTarget "TerminalKun2" */;
 			buildPhases = (
 				EFC268BBA06E3FF07A6EAEB6 /* Sources */,
+				46F09DCCA6AF5244AA45A277 /* Resources */,
 				A53513F771CB059E280E3F83 /* Frameworks */,
 			);
 			buildRules = (
@@ -218,6 +247,21 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		46F09DCCA6AF5244AA45A277 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B4E8613EFEB9BA586F7FE76 /* AppIcon.svg in Resources */,
+				899B5BB85B23694FC8B1C7F8 /* Assets.xcassets in Resources */,
+				E987D08DE334A673548A801C /* Mark.svg in Resources */,
+				7025BCCB8D57E0577C827451 /* PrivacyInfo.xcprivacy in Resources */,
+				CC6F9141BBB2AC43248CABEB /* ThirdPartyNotices.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		7A5BD23A9607011A91AD365B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -233,6 +277,7 @@
 			files = (
 				9B193867D79EC9983BFF4B10 /* AppStore.swift in Sources */,
 				24B88A8EC1EE9D7D4A108693 /* ConnectionsView.swift in Sources */,
+				0DD58A6EAE4432F9E82FAE94 /* Diagnostics.swift in Sources */,
 				A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */,
 				27CD6B0A63AEA44C57C2E257 /* HelpView.swift in Sources */,
 				4148EA51326F4725A5B14BBD /* KeyListView.swift in Sources */,
@@ -329,7 +374,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = App/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -407,7 +454,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = App/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

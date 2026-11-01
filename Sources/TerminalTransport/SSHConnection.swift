@@ -25,8 +25,10 @@ public struct SSHCredentials: Sendable {
     public var password: String
     public var privateKey: String?
     public var passphrase: String
-    public init(password: String = "", privateKey: String? = nil, passphrase: String = "") {
+    public var hardwareKey: Data?
+    public init(password: String = "", privateKey: String? = nil, passphrase: String = "", hardwareKey: Data? = nil) {
         self.password = password; self.privateKey = privateKey; self.passphrase = passphrase
+        self.hardwareKey = hardwareKey
     }
 }
 
@@ -42,6 +44,7 @@ public final class SSHConnection {
     private var heartbeatTask: Task<Void, Never>?
     private var heartbeatProbe: Task<Void, Never>?
     private var generation = UUID()
+    private var agent: AgentIdentity?
     public var connected: Bool { client?.isConnected == true }
     public init() {}
 
@@ -52,10 +55,16 @@ public final class SSHConnection {
                     onData: @escaping @MainActor (Data) -> Void) async throws {
         try profile.validate()
         let token = UUID(); generation = token
+        let forwardingProfileID = profile.id
+        if profile.agentForwarding == true, let key = try KeyMaterial.agentKey(credentials) { agent = AgentIdentity(key: key, comment: profile.name) }
+        else { agent = nil }
         func settings(_ profile: ConnectionProfile, _ credentials: SSHCredentials) throws -> SSHClientSettings {
             try profile.validate()
             let method: () -> SSHAuthenticationMethod
-            if let pem = credentials.privateKey {
+            if let data = credentials.hardwareKey {
+                let authentication = try KeyMaterial.hardwareAuthentication(data: data, user: profile.user)
+                method = { authentication }
+            } else if let pem = credentials.privateKey {
                 // Parsing validates the passphrase before any remote authentication attempt.
                 let authentication = try KeyMaterial.authentication(pem: pem, passphrase: credentials.passphrase, user: profile.user)
                 method = { authentication }
@@ -64,6 +73,10 @@ public final class SSHConnection {
                 authenticationMethod: { method() },
                 hostKeyValidator: .custom(HostValidator { key in try await verify(profile, key) }))
             value.connectTimeout = .seconds(20)
+            value.algorithms.publicKeyAlgorihtms = .add([(Insecure.RSA.PublicKey.self, Insecure.RSA.Signature.self)])
+            if profile.id == forwardingProfileID, let agent = self.agent {
+                value.agentChannelInitializer = { channel in channel.pipeline.addHandler(AgentChannelHandler(identity: agent)) }
+            }
             return value
         }
         var active: SSHClient?
@@ -85,7 +98,7 @@ public final class SSHConnection {
                 terminalCharacterWidth: max(1, cols), terminalRowHeight: max(1, rows),
                 terminalPixelWidth: 0, terminalPixelHeight: 0, terminalModes: .init([.ECHO: 1, .ICANON: 1, .ISIG: 1]))
             var outputEndedNormally = false
-            do { try await connection.withPTY(request) { output, writer in
+            do { try await connection.withPTY(request, forwardAgent: self.agent != nil) { output, writer in
                 let (stream, continuation) = AsyncStream<WriteEvent>.makeStream()
                 self.continuation = continuation
                 self.writerTask = Task { @MainActor in
@@ -139,12 +152,14 @@ public final class SSHConnection {
     public func send(_ data: Data) { continuation?.yield(.data(data)) }
     public func resize(cols: Int, rows: Int) { continuation?.yield(.resize(cols, rows)) }
     public func close() async {
+        agent?.setAvailable(false); agent = nil
         generation = UUID(); continuation?.finish(); continuation = nil
         writerTask?.cancel(); heartbeatTask?.cancel(); heartbeatProbe?.cancel(); heartbeatProbe = nil
         let connection = client; client = nil
         try? await connection?.close()
         for parent in parents.reversed() { try? await parent.close() }; parents = []
     }
+    public func setAgentActive(_ active: Bool) { agent?.setAvailable(active) }
     public func execute(_ command: String) async throws -> String {
         guard let client, client.isConnected else { throw SSHFailure.disconnected }
         return String(decoding: try await client.executeCommand(command, maxResponseSize: 1024 * 1024).readableBytesView, as: UTF8.self)

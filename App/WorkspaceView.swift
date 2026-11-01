@@ -24,7 +24,7 @@ struct WorkspaceView: View {
                 }
             }
         }
-        .sheet(item: $store.sheet) { route in
+        .sheet(item: $store.sheet, onDismiss: { store.didDismissSheet() }) { route in
             switch route {
             case .connections: ConnectionsView()
             case .settings: SettingsView()
@@ -97,12 +97,14 @@ struct SessionPane: View {
     @State private var regex = false
     @State private var importing = false
     @State private var showClose = false
+    @State private var matchCount = "0/0"
     var body: some View {
         VStack(spacing: 0) {
             metadata
             if showSearch {
                 HStack {
                     TextField("端末内を検索", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled().onSubmit { search(false) }.accessibilityIdentifier("terminalSearch")
+                    Text(matchCount).monospacedDigit().foregroundStyle(.secondary).accessibilityIdentifier("searchMatchCount")
                     Button { search(true) } label: { Image(systemName: "chevron.up") }.accessibilityLabel("前の一致")
                     Button { search(false) } label: { Image(systemName: "chevron.down") }.accessibilityLabel("次の一致")
                     Menu { Toggle("大文字と小文字を区別", isOn: $caseSensitive); Toggle("正規表現", isOn: $regex) } label: { Image(systemName: "line.3.horizontal.decrease") }
@@ -124,6 +126,7 @@ struct SessionPane: View {
                 }.padding(8).background(.bar)
             }
             TerminalSurface(session: session, onSearch: { showSearch.toggle() }, onUpload: { importing = true })
+                .accessibilityElement(children: .contain).accessibilityIdentifier("terminalSurface")
             if let progress = session.uploadProgress { ProgressView(value: progress).padding(.horizontal) }
             HStack {
                 Button { session.terminal.isFirstResponder ? session.terminal.resignFirstResponder() : session.terminal.becomeFirstResponder() } label: { Image(systemName: "keyboard") }.accessibilityLabel("キーボード")
@@ -156,11 +159,13 @@ struct SessionPane: View {
             if !session.directory.isEmpty { Text(session.directory).foregroundStyle(.secondary) }
             Spacer(minLength: 0)
             TimelineView(.periodic(from: .now, by: 60)) { context in Text(context.date, style: .time).monospacedDigit().foregroundStyle(.secondary) }
-        }.font(.caption).textSelection(.enabled).padding(.horizontal, 10).padding(.vertical, 5).background(Color(uiColor: .secondarySystemBackground))
+        }.font(.footnote).textSelection(.enabled).padding(.horizontal, 10).padding(.vertical, 5).background(Color(uiColor: .secondarySystemBackground))
     }
     private func search(_ backwards: Bool) {
         let options = SearchOptions(caseSensitive: caseSensitive, regex: regex)
         if backwards { session.terminal.findPrevious(query, options: options) } else { session.terminal.findNext(query, options: options) }
+        let summary = session.terminal.searchMatchSummary(query, options: options)
+        matchCount = "\(summary.index)/\(summary.total)"
     }
 }
 

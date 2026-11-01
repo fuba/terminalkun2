@@ -17,14 +17,15 @@ public final class LocalWorkspace: @unchecked Sendable {
         var output = "", pipeline: [String] = [], input = ""
         var index = 0
         while index <= words.count {
-            let token = index == words.count ? ";" : words[index]
-            if token == "|" || token == ";" {
+            let lexeme = index == words.count ? Token(value: ";", isOperator: true) : words[index]
+            let token = lexeme.value
+            if lexeme.isOperator && (token == "|" || token == ";") {
                 if !pipeline.isEmpty { input = try await run(pipeline, input: input); pipeline = [] }
                 if token == ";" { output += input; input = "" }
-            } else if token == ">" || token == ">>" {
+            } else if lexeme.isOperator && (token == ">" || token == ">>") {
                 guard index + 1 < words.count else { throw AppError.message("保存先が必要です。") }
                 if !pipeline.isEmpty { input = try await run(pipeline, input: input); pipeline = [] }
-                let target = try resolve(words[index + 1]); index += 1
+                let target = try resolve(words[index + 1].value); index += 1
                 var data = token == ">>" ? ((try? Data(contentsOf: target)) ?? Data()) : Data()
                 data.append(Data(input.utf8)); try data.write(to: target, options: [.atomic]); input = ""
             } else { pipeline.append(token) }
@@ -72,7 +73,7 @@ public final class LocalWorkspace: @unchecked Sendable {
         case "rm":
             for path in args where !path.hasPrefix("-") {
                 let url = try resolve(path)
-                guard url != root, url != directory else { throw AppError.message("作業中のディレクトリは削除できません。") }
+                guard url.path != root.path, url.path != directory.path else { throw AppError.message("作業中のディレクトリは削除できません。") }
                 let values = try url.resourceValues(forKeys: [.isDirectoryKey])
                 guard values.isDirectory != true || args.contains("-r") || args.contains("-rf") else { throw AppError.message("ディレクトリには -r を指定してください。") }
                 try fm.removeItem(at: url)
@@ -109,14 +110,19 @@ public final class LocalWorkspace: @unchecked Sendable {
         case "curl":
             guard let text = args.last, let url = URL(string: text), ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { throw AppError.message("HTTP(S) URL を指定してください。") }
             var request = URLRequest(url: url); request.timeoutInterval = 30
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard data.count <= 16 * 1024 * 1024 else { throw AppError.message("応答が 16 MiB を超えています。") }
+            let (bytes, _) = try await URLSession.shared.bytes(for: request)
+            var data = Data()
+            for try await byte in bytes {
+                guard data.count < 16 * 1024 * 1024 else { throw AppError.message("応答が 16 MiB を超えています。") }
+                data.append(byte)
+            }
             return String(decoding: data, as: UTF8.self)
         default: throw AppError.message("\(command): この端末内では利用できません。help でコマンドを確認するか、SSH 接続先で実行してください。")
         }
     }
-    private static func lex(_ source: String) throws -> [String] {
-        var tokens: [String] = [], word = "", quote: Character?, escaped = false, started = false
+    private struct Token { var value: String; var isOperator = false }
+    private static func lex(_ source: String) throws -> [Token] {
+        var tokens: [Token] = [], word = "", quote: Character?, escaped = false, started = false
         for char in source {
             if escaped { word.append(char); escaped = false; started = true; continue }
             if char == "\\", quote != "'" { escaped = true; continue }
@@ -124,13 +130,13 @@ public final class LocalWorkspace: @unchecked Sendable {
             if char == "'" || char == "\"" { quote = char; started = true }
             else if char == "`" || char == "$" { throw AppError.message("コマンド置換・変数展開は利用できません。") }
             else if char.isWhitespace || "|;>".contains(char) {
-                if started { tokens.append(word); word = ""; started = false }
+                if started { tokens.append(Token(value: word)); word = ""; started = false }
                 if !char.isWhitespace {
-                    if char == ">", tokens.last == ">" { tokens[tokens.count - 1] = ">>" } else { tokens.append(String(char)) }
+                    if char == ">", tokens.last?.isOperator == true, tokens.last?.value == ">" { tokens[tokens.count - 1].value = ">>" } else { tokens.append(Token(value: String(char), isOperator: true)) }
                 }
             } else { word.append(char); started = true }
         }
         guard quote == nil, !escaped else { throw AppError.message("引用符を閉じてください。") }
-        if started { tokens.append(word) }; return tokens
+        if started { tokens.append(Token(value: word)) }; return tokens
     }
 }

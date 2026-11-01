@@ -2,6 +2,19 @@ import XCTest
 @testable import TerminalCore
 
 final class CoreTests: XCTestCase {
+    func testConfigurationRejectsUnsafeSizesAndDuplicateIdentifiers() throws {
+        var config = AppConfiguration()
+        try config.validate()
+        config.appearance.fontSize = -1
+        XCTAssertThrowsError(try config.validate())
+        config.appearance.fontSize = 14
+        config.appearance.scrollback = Int.max
+        XCTAssertThrowsError(try config.validate())
+        config.appearance.scrollback = 10000
+        let profile = ConnectionProfile(name: "test", host: "localhost", user: "user")
+        config.profiles = [profile, profile]
+        XCTAssertThrowsError(try config.validate())
+    }
     func testOpenSSHFirstValueWinsWildcardNegationAndQuotedHost() throws {
         let result = try SSHConfig.parse("""
         Host bastion
@@ -44,6 +57,8 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(KeyEncoder.text("c", modifiers: [.control]), "\u{3}")
         XCTAssertEqual(KeyEncoder.special(.left, modifiers: [.alt], applicationCursor: true), "\u{1b}[1;3D")
         XCTAssertEqual(KeyEncoder.special(.up, modifiers: [], applicationCursor: true), "\u{1b}OA")
+        XCTAssertEqual(TmuxPrefix.parse("M-C-a"), "\u{1b}\u{1}")
+        XCTAssertNil(TmuxPrefix.parse("\u{1b}[31m"))
     }
 
     func testDisconnectedDraftNeverReplaysEnterOrControls() {
@@ -62,10 +77,34 @@ final class CoreTests: XCTestCase {
             let data = filter.consume(payload.prefix(split)) + filter.consume(payload.suffix(payload.count - split))
             XCTAssertEqual(String(decoding: data, as: UTF8.self), "前赤後!")
         }
+        let unicode = Data("日本語\u{9b}31m赤\u{9b}0m\u{9d}52;c;c2VjcmV0\u{9c}終".utf8)
+        var filter = LogFilter(), output = Data()
+        for byte in unicode { output.append(filter.consume(Data([byte]))) }
+        XCTAssertEqual(String(decoding: output, as: UTF8.self), "日本語赤終")
     }
 
     func testShellQuotingDoesNotEvaluateFilenames() {
         XCTAssertEqual(Shell.quote("a' $(touch x)"), "'a'\\'' $(touch x)'")
+    }
+    func testLogRotationPreservesControlStateAndUTF8() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let log = SessionLog(directory: root, byteLimit: 32)
+        try log.start()
+        try log.append(Data((String(repeating: "a", count: 30) + "\u{1b}]52;c;SECRET").utf8))
+        let payload = Data(("-CONTINUED\u{7}" + String(repeating: "日本語", count: 25)).utf8)
+        for byte in payload { try log.append(Data([byte])) }
+        log.stop()
+        let files = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+        XCTAssertGreaterThan(files.count, 2)
+        var text = ""
+        for file in files {
+            let data = try Data(contentsOf: file)
+            XCTAssertLessThanOrEqual(data.count, 32)
+            text += try XCTUnwrap(String(data: data, encoding: .utf8))
+        }
+        XCTAssertFalse(text.contains("SECRET")); XCTAssertFalse(text.contains("CONTINUED"))
+        XCTAssertEqual(text.filter { $0 == "日" }.count, 25)
     }
 
     func testReconnectStopsForTrustFailureAndUserClose() {
@@ -80,6 +119,8 @@ final class CoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let shell = LocalWorkspace(root: root)
+        let literals = try await shell.execute("echo '|' '>' ';' \\|")
+        XCTAssertEqual(literals, "| > ; |\n")
         _ = try await shell.execute("mkdir folder")
         _ = try await shell.execute("echo '日本語' > folder/test.txt")
         let output = try await shell.execute("cat folder/test.txt")
