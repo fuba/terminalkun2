@@ -1,0 +1,8 @@
+.reference/
+.build/
+build/
+.DS_Store
+xcuserdata/
+*.xcuserstate
+.worktrees/
+*.log
