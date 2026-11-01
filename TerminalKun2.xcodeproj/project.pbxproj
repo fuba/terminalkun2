@@ -219,7 +219,7 @@
 						TestTargetID = D8898719732966AE7BFBB9F4;
 					};
 					D8898719732966AE7BFBB9F4 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -377,17 +377,21 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = App/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = "$(TERMINALKUN2_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.fuba.terminalkun2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TERMINALKUN2_APP_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TERMINALKUN2_APP_BUNDLE_ID = dev.fuba.terminalkun2;
+				TERMINALKUN2_BUILD_NUMBER = 1;
+				TERMINALKUN2_DEVELOPMENT_TEAM = "";
 			};
 			name = Debug;
 		};
@@ -457,17 +461,21 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = App/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = "$(TERMINALKUN2_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = "$(TERMINALKUN2_DEVELOPMENT_TEAM)";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.fuba.terminalkun2;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TERMINALKUN2_APP_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TERMINALKUN2_APP_BUNDLE_ID = dev.fuba.terminalkun2;
+				TERMINALKUN2_BUILD_NUMBER = 1;
+				TERMINALKUN2_DEVELOPMENT_TEAM = "";
 			};
 			name = Release;
 		};

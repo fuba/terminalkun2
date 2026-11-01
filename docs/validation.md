@@ -43,10 +43,16 @@ UI は再起動をまたぐ保存を実際に検証する。繰り返し実行�
 
 ## 未検証・未対応
 
-この Mac には有効な開発者署名 ID と接続済み物理 iPhone がない。インストール済み実機、Secure Enclave の物理鍵生成、日本語マイク入力、長時間の OS suspension、MetricKit による実クラッシュ配信は未検証。署名なし app はそのまま実機にインストールできず、Xcode で Team を選んで署名する必要がある。
+初回移植の検証時点では、この Mac に有効な開発者署名 ID と接続済み物理 iPhone がなかった。インストール済み実機、Secure Enclave の物理鍵生成、日本語マイク入力、長時間の OS suspension、MetricKit による実クラッシュ配信は未検証。署名なし app はそのまま実機にインストールできず、Xcode で Team を選んで署名する必要がある。
 
 外付け FIDO2 / OpenSSH `sk-*` は未実装。任意のローカル fork/exec、Android foreground service、リモートからのローカル画像ファイル・共有メモリ読み出しは iOS の設計へ置き換えている。全 VT/xterm 拡張の完全互換、全画像形式の実機表示、すべての SSH サーバーとの互換までは確認していない。Ollama サーバー自体への実接続は未確認で、実推論には OpenAI 互換経路を使った。
 
 ## UI 記録
 
 専用の試験データで撮影した画面: [ローカル作業](screenshots/local.png)、[日本語キーボード](screenshots/keyboard.png)、[実 SSH 接続](screenshots/ssh.png)。
+
+## TestFlight 配信準備の追加検証
+
+同日、Xcode の Developer Team で App Store 用の配布署名済み IPA を作成し、codesign の strict 検証と Team / アプリ識別子 / 配布 entitlement を確認した。配信スクリプトの9件と既存 SwiftPM 試験（18件成功、実 AI 1件は環境未指定で skip）が成功。Xcode の中間アーカイブは署名前の状態で、書き出した IPA に配布署名を付ける。
+
+App Store Connect へのアップロードは実行したが、アプリレコード未登録のため Apple が拒否した。内部テストの設定と iPhone への配信は未完了。詳細・再開手順は [TestFlight 配信](testflight.md) に記録した。
