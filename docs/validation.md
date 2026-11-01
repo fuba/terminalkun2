@@ -53,6 +53,6 @@ UI は再起動をまたぐ保存を実際に検証する。繰り返し実行�
 
 ## TestFlight 配信準備の追加検証
 
-同日、Xcode の Developer Team で App Store 用の配布署名済み IPA を作成し、codesign の strict 検証と Team / アプリ識別子 / 配布 entitlement を確認した。配信スクリプトの8件と既存 SwiftPM 試験（18件成功、実 AI 1件は環境未指定で skip）が成功。Xcode の中間アーカイブは署名前の状態で、書き出した IPA に配布署名を付ける。
+同日、Xcode の Developer Team で App Store 用の配布署名済み IPA を作成し、codesign の strict 検証と Team / アプリ識別子 / 配布 entitlement を確認した。配信スクリプトの9件と既存 SwiftPM 試験（18件成功、実 AI 1件は環境未指定で skip）が成功。Xcode の中間アーカイブは署名前の状態で、書き出した IPA に配布署名を付ける。
 
 App Store Connect へのアップロードは実行したが、アプリレコード未登録のため Apple が拒否した。内部テストの設定と iPhone への配信は未完了。詳細・再開手順は [TestFlight 配信](testflight.md) に記録した。

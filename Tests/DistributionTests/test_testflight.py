@@ -31,6 +31,14 @@ class DistributionTests(unittest.TestCase):
             self.assertEqual(module.DistributionState(Path(directory)).reserve_build(), 2)
             self.assertEqual(store.reserve_build(), 3)
 
+    def test_signature_requirement_requires_apple_distribution_and_team(self):
+        requirement = module.signing_requirement('ABCDEFGHIJ')
+        self.assertIn('anchor apple generic', requirement)
+        self.assertIn('subject.OU] = "ABCDEFGHIJ"', requirement)
+        self.assertIn('1.2.840.113635.100.6.1.4', requirement)
+        with self.assertRaises(ValueError):
+            module.signing_requirement('bad" or true')
+
     def test_verified_archive_digest_changes_if_payload_changes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

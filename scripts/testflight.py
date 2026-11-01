@@ -121,6 +121,13 @@ def apple_tool_environment(original):
     return environment
 
 
+def signing_requirement(team):
+    if not re.fullmatch(r'[A-Z0-9]{10}', team):
+        raise ValueError('署名の Team ID が不正です。')
+    return ('anchor apple generic and certificate leaf[subject.OU] = "' + team +
+            '" and certificate leaf[field.1.2.840.113635.100.6.1.4] exists')
+
+
 def validate_signing_metadata(entitlements, team, bundle, previous=None):
     identity = entitlements.get('application-identifier', '')
     if entitlements.get('com.apple.developer.team-identifier') != team or not re.fullmatch(r'[A-Z0-9]{10}\.' + re.escape(bundle), identity):
@@ -196,10 +203,10 @@ def export_signed(store):
     verify = export / 'Verified'
     if verify.exists():
         shutil.rmtree(verify)
-    run(['ditto', '-x', '-k', packages[0], verify], DISTRIBUTION / 'logs/verify.log')
+    run(['/usr/bin/ditto', '-x', '-k', packages[0], verify], DISTRIBUTION / 'logs/verify.log')
     app = verify / 'Payload/TerminalKun2.app'
-    run(['codesign', '--verify', '--deep', '--strict', app], DISTRIBUTION / 'logs/verify.log')
-    result = subprocess.run(['codesign', '-d', '--entitlements', ':-', str(app)], capture_output=True, check=True)
+    run(['/usr/bin/codesign', '--verify', '--deep', '--strict', '-R', signing_requirement(state['teamID']), app], DISTRIBUTION / 'logs/verify.log')
+    result = subprocess.run(['/usr/bin/codesign', '-d', '--entitlements', ':-', str(app)], capture_output=True, check=True)
     entitlements = plistlib.loads(result.stdout)
     identity = validate_signing_metadata(entitlements, state['teamID'], state['bundleID'], state.get('signedIdentity'))
     store.update(signedIdentity=identity, signedArchive=state['lastArchive'], signedIPA=str(packages[0].relative_to(ROOT)), verifiedArchiveDigest=archive_digest(archive))
