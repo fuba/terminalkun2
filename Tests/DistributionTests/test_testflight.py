@@ -49,6 +49,27 @@ class DistributionTests(unittest.TestCase):
             file.write_bytes(b'altered')
             self.assertNotEqual(original, module.archive_digest(root))
 
+    def test_no_encryption_declaration_does_not_claim_exemption(self):
+        original = plistlib.dumps({'CFBundleIdentifier': 'dev.example.app'})
+        result = plistlib.loads(module.distribution_info(original, None))
+        self.assertNotIn('ITSAppUsesNonExemptEncryption', result)
+
+    def test_approved_standard_encryption_without_france_is_carried_forward(self):
+        original = plistlib.dumps({'CFBundleIdentifier': 'dev.example.app'})
+        declaration = {'algorithms': 'standard', 'distributionInFrance': False, 'exemptFromDocumentation': True}
+        result = plistlib.loads(module.distribution_info(original, declaration))
+        self.assertIs(result['ITSAppUsesNonExemptEncryption'], False)
+        self.assertEqual(result['CFBundleIdentifier'], 'dev.example.app')
+
+    def test_changed_encryption_scope_is_not_silently_marked_exempt(self):
+        original = plistlib.dumps({})
+        good = {'algorithms': 'standard', 'distributionInFrance': False, 'exemptFromDocumentation': True}
+        for change in [{'algorithms': 'proprietary'}, {'distributionInFrance': True}, {'exemptFromDocumentation': False}]:
+            with self.assertRaises(ValueError):
+                module.distribution_info(original, dict(good, **change))
+        with self.assertRaises(ValueError):
+            module.distribution_info(plistlib.dumps({'ITSAppUsesNonExemptEncryption': True}), good)
+
     def test_invalid_configuration_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             store = module.DistributionState(Path(directory))
