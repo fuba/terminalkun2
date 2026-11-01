@@ -85,6 +85,8 @@ TestFlight の各ビルドの有効期間はアップロードから90日。継�
 
 GUI の Organizer は署名なしの中間アーカイブをそのまま配信できず、`No Team Found in Archive` になる。アーカイブの Team メタデータだけでは解消しない。既存の Apple Development 証明書で作業用コピーに実際の中間署名を付け、GUI が最終的な Apple Distribution 署名とプロファイルを適用するところまで確認した。中間署名は実機配信用とは扱わない。
 
-ビルド12では、GUI の配布署名後に IPA 作成の `rsync` 子プロセスが Homebrew 版を選び、前述の `Copy failed` が再現した。署名済みの Payload / SwiftSupport を私有の `build/Distribution/Recovered/Root` に保管し、Apple Distribution の証明書チェーン、設定済み Team、アプリ識別子、`get-task-allow=false` と既存アプリの識別子の一致を strict 検証した。ビルド番号12も確認した。IPA 作成・アップロードは未完了であり、この段階を TestFlight 配信完了とは扱わない。
+ビルド12では、GUI の配布署名後に IPA 作成の `rsync` 子プロセスが Homebrew 版を選び、前述の `Copy failed` が再現した。署名済みの Payload / SwiftSupport を私有の `build/Distribution/Recovered/Root` に保管し、Apple Distribution の証明書チェーン、設定済み Team、アプリ識別子、`get-task-allow=false` と既存アプリの識別子の一致を strict 検証した。ビルド番号12も確認した。この時点では IPA 作成・アップロードが止まっていたため、TestFlight 配信完了とは扱わなかった。
 
-Xcode をシステムツール優先の PATH で起動し直す準備では、ログインセッションの起動環境を一時的に変更し、起動直後に以前の値へ戻した。GUI での IPA 作成と Apple 側の配信確認は後続の検証事項。アカウントの削除、Keychain の認証情報の消去、秘密鍵の書き出しは行っていない。
+Xcode をシステムツール優先の PATH で起動し直す準備では、ログインセッションの起動環境を一時的に変更し、起動直後に以前の値へ戻した。GUI の再起動後、アカウントが復元されない状態を実際に観測した。所有者の再サインイン後は登録情報が永続設定にも現れ、2026-11-02 に CLI で IPA の書き出し・strict 検証・アップロードが成功した。App Store Connect で 0.1.0 (12) が処理完了後、同じ「個人用」内部グループの「テスト中」となることを確認した。追加の暗号化質問には止まらず自動配信された。ビルド12の物理 iPhone への更新完了までは、この確認に含めない。
+
+GUI と CLI の登録状態が異なった根本原因は未確定。アカウントの削除、Keychain の認証情報の消去、秘密鍵の書き出しは行っていない。サインイン済みと確認できた時点の事実と、その後の復元・再認証の結果を区別する。
