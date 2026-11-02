@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		06563649987E3828B52F5E08 /* TerminalContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */; };
+		0A04E560B6D86054605AFEC6 /* FlickKeyboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25C9B0AB2F579B74B8AD86B /* FlickKeyboardTests.swift */; };
 		0DCE3024415A5E16C03872F3 /* TerminalCore in Frameworks */ = {isa = PBXBuildFile; productRef = C826A186415692CAD5654717 /* TerminalCore */; };
 		0DD58A6EAE4432F9E82FAE94 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1DAEFC456A8175CB424471 /* Diagnostics.swift */; };
 		11869E9C1252484DCF8CFF8F /* CompositionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */; };
@@ -79,6 +80,7 @@
 		8566351EB2B9730433B3DDDB /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		9A479C8C2C7A8D3856083C54 /* TerminalTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalTypography.swift; sourceTree = "<group>"; };
 		9EEB6FC0495A2DC547576699 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B25C9B0AB2F579B74B8AD86B /* FlickKeyboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickKeyboardTests.swift; sourceTree = "<group>"; };
 		C2CFF3668F7A708FD3BFF5A5 /* TerminalKun2AppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBB050C70D49B09ADD96E5DA /* KeyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyListView.swift; sourceTree = "<group>"; };
 		D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionPanel.swift; sourceTree = "<group>"; };
@@ -162,6 +164,7 @@
 		AF09F6BD14CFBBE822E0CA86 /* TerminalAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				B25C9B0AB2F579B74B8AD86B /* FlickKeyboardTests.swift */,
 				0E55C85640D36423C7DD9AAE /* PresentationTests.swift */,
 				ED3ECCE8422E9EC50E3891C2 /* QRImageTests.swift */,
 			);
@@ -342,6 +345,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A04E560B6D86054605AFEC6 /* FlickKeyboardTests.swift in Sources */,
 				E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */,
 				CA1A2E14751ABD480110BD0D /* QRImageTests.swift in Sources */,
 			);

@@ -4,23 +4,34 @@ import TerminalIME
 
 @MainActor
 final class ProgramKeyboard: UIInputView {
-    struct Key { let label: String; let value: String; let units: CGFloat; init(_ label: String, _ value: String? = nil, _ units: CGFloat = 1) { self.label = label; self.value = value ?? label; self.units = units } }
+    struct Key {
+        let label: String; let value: String; let units: CGFloat; let flick: FlickKey?
+        init(_ label: String, _ value: String? = nil, _ units: CGFloat = 1) { self.label = label; self.value = value ?? label; self.units = units; flick = nil }
+        init(_ flick: FlickKey) { self.label = flick.text(.center) ?? ""; value = flick.id; units = 1; self.flick = flick }
+    }
     private struct Hit { let key: Key; let frame: CGRect }
+    private struct Press { let index: Int; let sequence: Int; var gesture: FlickGesture? }
     private weak var session: TerminalSession?
     private let engine: JapaneseInput
     private var hits: [Hit] = []
-    private var touches: [ObjectIdentifier: Int] = [:]
+    private var presses: [ObjectIdentifier: Press] = [:]
+    private var sequence = 0
     private var timers: [ObjectIdentifier: Timer] = [:]
     private var modifiers = ModifierState()
     private var japanese = false
     private var function = false
     private var symbols = false
+    private var numbers = false
     private var selectedCandidate = 0
     private var geometrySize = CGSize.zero
     private var geometryFunction = false
     private var geometrySymbols = false
     private var geometryCompact = false
+    private var geometryJapanese = false
+    private var geometryNumbers = false
     private var epoch = 0
+    private let preview = FlickPreview()
+    private let feedback = UISelectionFeedbackGenerator()
     private lazy var heightConstraint = heightAnchor.constraint(equalToConstant: 248)
     weak var compositionPresenter: CompositionPresenting? { didSet { refreshComposition() } }
     var onModifiersChanged: ((Modifiers, Modifiers) -> Void)?
@@ -31,6 +42,8 @@ final class ProgramKeyboard: UIInputView {
         allowsSelfSizing = true; isMultipleTouchEnabled = true; backgroundColor = .secondarySystemBackground
         translatesAutoresizingMaskIntoConstraints = false
         heightConstraint.isActive = true
+        preview.isHidden = true; preview.isUserInteractionEnabled = false; preview.isAccessibilityElement = false
+        addSubview(preview)
         NotificationCenter.default.addObserver(self, selector: #selector(background), name: UIApplication.willResignActiveNotification, object: nil)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -41,7 +54,7 @@ final class ProgramKeyboard: UIInputView {
         }
         return session?.terminal.traitCollection.verticalSizeClass == .compact
     }
-    override var intrinsicContentSize: CGSize { CGSize(width: UIView.noIntrinsicMetric, height: (compactHeight ? 148 : 238) + max(10, safeAreaInsets.bottom)) }
+    override var intrinsicContentSize: CGSize { CGSize(width: UIView.noIntrinsicMetric, height: (compactHeight ? (japanese && !symbols && !function ? 184 : 148) : 238) + max(10, safeAreaInsets.bottom)) }
     override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize {
         CGSize(width: targetSize.width, height: intrinsicContentSize.height)
     }
@@ -49,7 +62,7 @@ final class ProgramKeyboard: UIInputView {
         systemLayoutSizeFitting(targetSize)
     }
     override func didMoveToWindow() {
-        super.didMoveToWindow(); invalidateIntrinsicContentSize()
+        super.didMoveToWindow(); if window == nil { cancelPresses() }; invalidateIntrinsicContentSize()
     }
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
@@ -61,17 +74,20 @@ final class ProgramKeyboard: UIInputView {
     func setWords(_ words: [UserWord]) { engine.words = words }
     @objc private func background() { resetInput() }
     func resetInput() {
-        epoch += 1
-        timers.values.forEach { $0.invalidate() }; timers = [:]; touches = [:]
+        cancelPresses()
         modifiers.reset(); engine.cancel(); selectedCandidate = 0; refreshComposition(); refreshModifiers()
+    }
+    private func cancelPresses() {
+        epoch += 1; timers.values.forEach { $0.invalidate() }; timers = [:]; presses = [:]; preview.isHidden = true; setNeedsDisplay()
     }
     override func layoutSubviews() {
         super.layoutSubviews()
         if heightConstraint.constant != intrinsicContentSize.height { heightConstraint.constant = intrinsicContentSize.height }
         if geometryCompact != compactHeight { geometryCompact = compactHeight; invalidateIntrinsicContentSize() }
-        if geometrySize != bounds.size || geometryFunction != function || geometrySymbols != symbols {
-            epoch += 1; timers.values.forEach { $0.invalidate() }; timers = [:]; touches = [:]
+        if geometrySize != bounds.size || geometryFunction != function || geometrySymbols != symbols || geometryJapanese != japanese || geometryNumbers != numbers {
+            cancelPresses()
             geometrySize = bounds.size; geometryFunction = function; geometrySymbols = symbols
+            geometryJapanese = japanese; geometryNumbers = numbers
         }
         hits = []
         let rows = keyRows(), top: CGFloat = 4, rowHeight = max(1, (bounds.height - top - max(10, safeAreaInsets.bottom) - 4) / CGFloat(rows.count))
@@ -87,8 +103,16 @@ final class ProgramKeyboard: UIInputView {
             let element = KeyboardAccessibilityElement(accessibilityContainer: self)
             element.accessibilityLabel = display(hit.key); element.accessibilityTraits = .keyboardKey
             element.accessibilityIdentifier = "program-key-" + hit.key.value
-            element.accessibilityFrameInContainerSpace = hit.frame
-            element.activate = { [weak self] in self?.handle(hit.key.value) }; return element
+            element.accessibilityFrameInContainerSpace = hit.frame.insetBy(dx: -2, dy: -2)
+            element.activate = { [weak self] in self?.activate(hit.key, direction: .center) }
+            if let flick = hit.key.flick {
+                element.accessibilityHint = "上下左右へフリックして入力"
+                element.accessibilityCustomActions = FlickDirection.allCases.filter { $0 != .center }.compactMap { direction in
+                    guard let text = flick.text(direction) else { return nil }
+                    return UIAccessibilityCustomAction(name: text) { [weak self] _ in self?.activate(hit.key, direction: direction); return true }
+                }
+            }
+            return element
         }
         accessibilityElements = keys
         setNeedsDisplay()
@@ -100,7 +124,7 @@ final class ProgramKeyboard: UIInputView {
                 Array("~!@#$%^&*").map { Key(String($0)) },
                 Array("()-_=+;:'\"").map { Key(String($0)) },
                 [Key(","), Key("."), Key("/"), Key("?"), Key("←", "left"), Key("→", "right"), Key("⌫", "backspace", 2)],
-                [Key("ABC", "symbols", 1.5), Key("Tab", "tab"), Key("space", "space", 4), Key("↵", "enter", 2)]
+                [Key(japanese ? (numbers ? "123" : "かな") : "ABC", "symbols", 1.5), Key("Tab", "tab"), Key("space", "space", 4), Key("↵", "enter", 2)]
             ]
         }
         if function {
@@ -109,7 +133,17 @@ final class ProgramKeyboard: UIInputView {
                 (7...12).map { Key("F\($0)", "f\($0)") },
                 [Key("Home", "home"), Key("↑", "up"), Key("End", "end"), Key("PgUp", "pageUp"), Key("Del", "delete")],
                 [Key("←", "left"), Key("↓", "down"), Key("→", "right"), Key("PgDn", "pageDown"), Key("コピー", "copy")],
-                [Key("ABC", "fn"), Key("^[", "escape"), Key("screen", "screen"), Key("貼付", "paste"), Key("↵", "enter")]
+                [Key(japanese ? (numbers ? "123" : "かな") : "ABC", "fn"), Key("^[", "escape"), Key("screen", "screen"), Key("貼付", "paste"), Key("↵", "enter")]
+            ]
+        }
+        if japanese {
+            let keys = numbers ? JapaneseFlickLayout.numbers : JapaneseFlickLayout.kana
+            let bottomLeft = numbers ? FlickKey("number-sign", ["-","+","=","*","/"]) : FlickKey("kana-modifier", ["小゛゜","゛","小","゜","大"])
+            return [
+                [Key("ABC", "language"), Key(keys[0]), Key(keys[1]), Key(keys[2]), Key("⌫", "backspace")],
+                [Key(numbers ? "かな" : "123", "numbers"), Key(keys[3]), Key(keys[4]), Key(keys[5]), Key("変換", "space")],
+                [Key("#+=", "symbols"), Key(keys[6]), Key(keys[7]), Key(keys[8]), Key("↵", "enter")],
+                [Key("Fn", "fn"), Key(bottomLeft), Key(keys[9]), Key(keys[10]), Key("⌄", "hide")]
             ]
         }
         return [
@@ -122,52 +156,98 @@ final class ProgramKeyboard: UIInputView {
     }
     private func display(_ key: Key) -> String {
         if key.value == "shift" { return modifiers.locked.contains(.shift) ? "⇪" : "⇧" }
-        if key.value == "language" { return japanese ? "あ" : "A" }
-        if key.value == "space" { return japanese ? "変換" : "space" }
+        if key.value == "language" { return japanese ? "ABC" : "あいう" }
+        if key.value == "space" { return japanese ? (engine.reading.isEmpty ? "空白" : "変換") : "space" }
+        if key.value == "enter", japanese { return engine.reading.isEmpty ? "改行" : "確定" }
         if key.value.count == 1 { return KeyEncoder.text(key.label, modifiers: modifiers.active.intersection(.shift)) }
         return key.label
     }
     override func draw(_ rect: CGRect) {
         for (index, hit) in hits.enumerated() {
-            let pressed = touches.values.contains(index)
+            let pressed = presses.values.contains { $0.index == index && $0.gesture?.cancelled != true }
             let active = hit.key.value == "shift" && modifiers.active.contains(.shift)
             (pressed ? UIColor.systemGray3 : (active ? UIColor.systemGray2 : UIColor.tertiarySystemBackground)).setFill()
             UIBezierPath(roundedRect: hit.frame, cornerRadius: 5).fill()
-            let attrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: hit.key.value.count == 1 ? 21 : 15, weight: .regular), .foregroundColor: UIColor.label, .kern: TerminalTypography.tracking]
+            let attrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: hit.key.flick != nil && hit.key.label.count == 1 ? min(25, max(20, hit.frame.height - 27)) : hit.key.value.count == 1 ? 21 : 15, weight: .regular), .foregroundColor: UIColor.label, .kern: TerminalTypography.tracking]
             let text = display(hit.key) as NSString, size = text.size(withAttributes: attrs)
-            text.draw(at: CGPoint(x: hit.frame.midX - size.width / 2, y: hit.frame.midY - size.height / 2), withAttributes: attrs)
+            let hint = hit.key.flick?.choices.dropFirst().joined() ?? ""
+            text.draw(at: CGPoint(x: hit.frame.midX - size.width / 2, y: hint.isEmpty ? hit.frame.midY - size.height / 2 : hit.frame.minY + max(0, (hit.frame.height - 16 - size.height) / 2)), withAttributes: attrs)
+            if !hint.isEmpty {
+                let hintAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.secondaryLabel]
+                let label = hint as NSString, hintSize = label.size(withAttributes: hintAttrs)
+                label.draw(at: CGPoint(x: hit.frame.midX - hintSize.width / 2, y: hit.frame.maxY - hintSize.height - 2), withAttributes: hintAttrs)
+            }
         }
     }
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for touch in touches {
-            let point = touch.location(in: self)
-            guard let index = hits.firstIndex(where: { $0.frame.contains(point) }) else { continue }
-            let id = ObjectIdentifier(touch); self.touches[id] = index
-            let value = hits[index].key.value; handle(value)
-            let inputEpoch = epoch
-            if value.count == 1 || ["backspace", "left", "right", "up", "down", "delete"].contains(value) {
-                timers[id] = Timer.scheduledTimer(withTimeInterval: 0.42, repeats: false) { [weak self] _ in
-                    Task { @MainActor in
-                        guard let self, self.touches[id] != nil, self.epoch == inputEpoch else { return }
-                        self.handle(value)
-                        self.timers[id] = Timer.scheduledTimer(withTimeInterval: 0.065, repeats: true) { [weak self] _ in Task { @MainActor in
-                            guard let self, self.epoch == inputEpoch, self.touches[id] != nil else { return }; self.handle(value)
-                        } }
-                    }
-                }
-            }
-        }
+        for touch in touches.sorted(by: { $0.timestamp < $1.timestamp }) { beginPress(ObjectIdentifier(touch), at: touch.location(in: self)) }
         setNeedsDisplay()
     }
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for touch in touches {
-            let id = ObjectIdentifier(touch)
-            if let index = self.touches[id], !hits[index].frame.contains(touch.location(in: self)) { finish(touch) }
+        for touch in touches { movePress(ObjectIdentifier(touch), to: touch.location(in: self)) }
+    }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches.sorted(by: { (presses[ObjectIdentifier($0)]?.sequence ?? 0) < (presses[ObjectIdentifier($1)]?.sequence ?? 0) }) {
+            let id = ObjectIdentifier(touch); movePress(id, to: touch.location(in: self)); endPress(id, cancelled: false)
         }
     }
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { touches.forEach(finish) }
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { touches.forEach(finish) }
-    private func finish(_ touch: UITouch) { let id = ObjectIdentifier(touch); timers.removeValue(forKey: id)?.invalidate(); touches.removeValue(forKey: id); setNeedsDisplay() }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { for touch in touches { endPress(ObjectIdentifier(touch), cancelled: true) } }
+    func beginPress(_ id: ObjectIdentifier, at point: CGPoint) {
+        guard let index = hits.firstIndex(where: { $0.frame.insetBy(dx: -2, dy: -2).contains(point) }) else { return }
+        let key = hits[index].key; sequence += 1
+        let pressSequence = sequence
+        presses[id] = Press(index: index, sequence: pressSequence, gesture: key.flick == nil ? nil : FlickGesture(start: point))
+        if key.flick != nil { feedback.prepare(); updatePreview(); return }
+        handle(key.value)
+        let inputEpoch = epoch
+        guard presses[id]?.sequence == pressSequence else { return }
+        if key.value.count == 1 || ["backspace", "left", "right", "up", "down", "delete"].contains(key.value) {
+            timers[id] = Timer.scheduledTimer(withTimeInterval: 0.42, repeats: false) { [weak self] _ in Task { @MainActor in
+                guard let self, self.presses[id]?.sequence == pressSequence, self.epoch == inputEpoch else { return }
+                self.handle(key.value)
+                guard self.presses[id]?.sequence == pressSequence, self.epoch == inputEpoch else { return }
+                self.timers[id] = Timer.scheduledTimer(withTimeInterval: 0.065, repeats: true) { [weak self] _ in Task { @MainActor in
+                    guard let self, self.epoch == inputEpoch, self.presses[id]?.sequence == pressSequence else { return }; self.handle(key.value)
+                } }
+            } }
+        }
+    }
+    func movePress(_ id: ObjectIdentifier, to point: CGPoint) {
+        guard var press = presses[id], hits.indices.contains(press.index) else { return }
+        if var gesture = press.gesture {
+            let previous = gesture.direction; gesture.move(to: point); press.gesture = gesture; presses[id] = press
+            if !gesture.cancelled && previous != gesture.direction { feedback.selectionChanged() }
+            updatePreview()
+        } else if !hits[press.index].frame.insetBy(dx: -2, dy: -2).contains(point) { endPress(id, cancelled: true) }
+        setNeedsDisplay()
+    }
+    func endPress(_ id: ObjectIdentifier, cancelled: Bool) {
+        timers.removeValue(forKey: id)?.invalidate()
+        if let press = presses.removeValue(forKey: id), !cancelled, let gesture = press.gesture, !gesture.cancelled, hits.indices.contains(press.index) {
+            activate(hits[press.index].key, direction: gesture.direction)
+        }
+        updatePreview(); setNeedsDisplay()
+    }
+    private func updatePreview() {
+        guard let press = presses.values.filter({ $0.gesture != nil && $0.gesture?.cancelled == false }).max(by: { $0.sequence < $1.sequence }),
+              hits.indices.contains(press.index), let flick = hits[press.index].key.flick, let direction = press.gesture?.direction else { preview.isHidden = true; return }
+        let frame = hits[press.index].frame, size: CGFloat = 138
+        preview.frame = CGRect(x: min(max(4, frame.midX - size / 2), bounds.width - size - 4), y: min(max(4, frame.midY - size + 10), bounds.height - size - 4), width: size, height: size)
+        preview.flick = flick; preview.direction = direction; preview.isHidden = false; preview.setNeedsDisplay()
+        bringSubviewToFront(preview)
+    }
+    private func activate(_ key: Key, direction: FlickDirection) {
+        guard let flick = key.flick else { handle(key.value); return }
+        if key.value == "kana-modifier" {
+            let variant: KanaVariant
+            switch direction { case .center: variant = .cycle; case .left: variant = .voiced; case .up: variant = .small; case .right: variant = .semiVoiced; case .down: variant = .large }
+            engine.modifyPreviousKana(variant); selectedCandidate = 0; refreshComposition(); return
+        }
+        guard let text = flick.text(direction) else { return }
+        if modifiers.active.contains(.control) || modifiers.active.contains(.alt) { handle(text); return }
+        if engine.converting { session?.send(Data(engine.commit(index: selectedCandidate).utf8)) }
+        engine.insertDirect(text); selectedCandidate = 0; modifiers.consume(); refreshModifiers(); refreshComposition()
+    }
     func chooseSegment(_ index: Int) {
         guard engine.converting else { return }
         engine.selectCandidate(selectedCandidate); engine.selectSegment(index)
@@ -184,13 +264,13 @@ final class ProgramKeyboard: UIInputView {
             modifiers.tap(value == "control" ? .control : value == "alt" ? .alt : .shift); refreshModifiers(); return
         }
         if value == "language" {
-            epoch += 1
             if !engine.reading.isEmpty { session.send(Data(engine.commit().utf8)) }
-            timers.values.forEach { $0.invalidate() }; timers = [:]
-            japanese.toggle(); modifiers.reset(); refreshModifiers(); refreshComposition(); return
+            cancelPresses(); japanese.toggle(); numbers = false; function = false; symbols = false
+            modifiers.reset(); invalidateIntrinsicContentSize(); refreshModifiers(); refreshComposition(); return
         }
-        if value == "fn" { function.toggle(); setNeedsLayout(); return }
-        if value == "symbols" { symbols.toggle(); function = false; setNeedsLayout(); return }
+        if value == "numbers" { cancelPresses(); numbers.toggle(); setNeedsLayout(); return }
+        if value == "fn" { cancelPresses(); function.toggle(); symbols = false; invalidateIntrinsicContentSize(); setNeedsLayout(); return }
+        if value == "symbols" { cancelPresses(); symbols.toggle(); function = false; invalidateIntrinsicContentSize(); setNeedsLayout(); return }
         if value == "system" {
             if !engine.reading.isEmpty { session.send(Data(engine.commit().utf8)) }
             session.store?.configuration.appearance.customKeyboard.toggle(); return
@@ -247,6 +327,27 @@ private final class KeyboardAccessibilityElement: UIAccessibilityElement {
     override func accessibilityActivate() -> Bool { activate?(); return true }
 }
 
+private final class FlickPreview: UIView {
+    var flick: FlickKey?
+    var direction: FlickDirection = .center
+    override init(frame: CGRect) { super.init(frame: frame); isOpaque = false; backgroundColor = .clear }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func draw(_ rect: CGRect) {
+        guard let flick else { return }
+        let positions: [FlickDirection: CGPoint] = [.center: CGPoint(x: 1, y: 1), .left: CGPoint(x: 0, y: 1), .up: CGPoint(x: 1, y: 0), .right: CGPoint(x: 2, y: 1), .down: CGPoint(x: 1, y: 2)]
+        let tile = bounds.width / 3
+        for choice in FlickDirection.allCases {
+            guard let text = flick.text(choice), let position = positions[choice] else { continue }
+            let frame = CGRect(x: position.x * tile, y: position.y * tile, width: tile, height: tile).insetBy(dx: 1, dy: 1)
+            (choice == direction ? UIColor.label : UIColor.systemGray5).setFill()
+            UIBezierPath(roundedRect: frame, cornerRadius: 8).fill()
+            let attrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: text.count > 1 ? 14 : 26), .foregroundColor: choice == direction ? UIColor.systemBackground : UIColor.label]
+            let label = text as NSString, size = label.size(withAttributes: attrs)
+            label.draw(at: CGPoint(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2), withAttributes: attrs)
+        }
+    }
+}
+
 @MainActor
 final class TerminalAccessoryBar: UIInputView {
     init(session: TerminalSession) {
@@ -257,7 +358,7 @@ final class TerminalAccessoryBar: UIInputView {
         scroll.translatesAutoresizingMaskIntoConstraints = false; stack.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo: leadingAnchor), scroll.trailingAnchor.constraint(equalTo: trailingAnchor), scroll.topAnchor.constraint(equalTo: topAnchor), scroll.bottomAnchor.constraint(equalTo: bottomAnchor), stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 4), stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -4), stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor), stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor), stack.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor)])
         var modifierButtons: [String: UIButton] = [:]
-        for (label, value) in [("Esc", "escape"), ("Tab", "tab"), ("Ctrl", "control"), ("Alt", "alt"), ("←", "left"), ("↓", "down"), ("↑", "up"), ("→", "right"), ("{", "{"), ("}", "}"), ("⌨", "system"), ("⌄", "hide")] {
+        for (label, value) in [("Esc", "escape"), ("Tab", "tab"), ("Ctrl", "control"), ("Alt", "alt"), ("⇧", "shift"), ("←", "left"), ("↓", "down"), ("↑", "up"), ("→", "right"), ("{", "{"), ("}", "}"), ("⌨", "system"), ("⌄", "hide")] {
             var config = UIButton.Configuration.plain(); config.title = label; config.baseForegroundColor = .label
             let button = UIButton(configuration: config, primaryAction: UIAction { [weak session] _ in session?.keyboard.handle(value) })
             button.widthAnchor.constraint(greaterThanOrEqualToConstant: 42).isActive = true
@@ -265,9 +366,9 @@ final class TerminalAccessoryBar: UIInputView {
             stack.addArrangedSubview(button); modifierButtons[value] = button
         }
         session.keyboard.onModifiersChanged = { active, locked in
-            for (name, flag) in [("control", Modifiers.control), ("alt", Modifiers.alt)] {
+            for (name, flag) in [("control", Modifiers.control), ("alt", Modifiers.alt), ("shift", Modifiers.shift)] {
                 modifierButtons[name]?.configuration?.background.backgroundColor = active.contains(flag) ? .systemGray3 : .clear
-                modifierButtons[name]?.configuration?.title = name == "control" ? (locked.contains(flag) ? "Ctrl●" : "Ctrl") : (locked.contains(flag) ? "Alt●" : "Alt")
+                modifierButtons[name]?.configuration?.title = name == "control" ? (locked.contains(flag) ? "Ctrl●" : "Ctrl") : name == "alt" ? (locked.contains(flag) ? "Alt●" : "Alt") : (locked.contains(flag) ? "⇪" : "⇧")
             }
         }
     }
