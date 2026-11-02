@@ -195,16 +195,19 @@ final class ProgramKeyboard: UIInputView {
     func beginPress(_ id: ObjectIdentifier, at point: CGPoint) {
         guard let index = hits.firstIndex(where: { $0.frame.insetBy(dx: -2, dy: -2).contains(point) }) else { return }
         let key = hits[index].key; sequence += 1
-        presses[id] = Press(index: index, sequence: sequence, gesture: key.flick == nil ? nil : FlickGesture(start: point))
+        let pressSequence = sequence
+        presses[id] = Press(index: index, sequence: pressSequence, gesture: key.flick == nil ? nil : FlickGesture(start: point))
         if key.flick != nil { feedback.prepare(); updatePreview(); return }
         handle(key.value)
         let inputEpoch = epoch
+        guard presses[id]?.sequence == pressSequence else { return }
         if key.value.count == 1 || ["backspace", "left", "right", "up", "down", "delete"].contains(key.value) {
             timers[id] = Timer.scheduledTimer(withTimeInterval: 0.42, repeats: false) { [weak self] _ in Task { @MainActor in
-                guard let self, self.presses[id] != nil, self.epoch == inputEpoch else { return }
+                guard let self, self.presses[id]?.sequence == pressSequence, self.epoch == inputEpoch else { return }
                 self.handle(key.value)
+                guard self.presses[id]?.sequence == pressSequence, self.epoch == inputEpoch else { return }
                 self.timers[id] = Timer.scheduledTimer(withTimeInterval: 0.065, repeats: true) { [weak self] _ in Task { @MainActor in
-                    guard let self, self.epoch == inputEpoch, self.presses[id] != nil else { return }; self.handle(key.value)
+                    guard let self, self.epoch == inputEpoch, self.presses[id]?.sequence == pressSequence else { return }; self.handle(key.value)
                 } }
             } }
         }
