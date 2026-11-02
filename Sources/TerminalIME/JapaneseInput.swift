@@ -33,6 +33,18 @@ public final class JapaneseInput {
         }
         converting = false; segments = []; refresh()
     }
+    public func insertDirect(_ text: String) {
+        composing.insertAtCursorPosition(text, inputStyle: .direct)
+        converting = false; segments = []; selectedSegment = 0; refresh()
+    }
+    public func modifyPreviousKana(_ variant: KanaVariant) {
+        guard let previous = composing.convertTargetBeforeCursor.last,
+              let replacement = variant.apply(to: previous) else { return }
+        converting = false; segments = []; selectedSegment = 0
+        composing.deleteBackwardFromCursorPosition(count: 1)
+        composing.insertAtCursorPosition(replacement, inputStyle: .direct)
+        refresh()
+    }
     public func deleteBackward() {
         if converting { converting = false; segments = []; refresh(); return }
         composing.deleteBackwardFromCursorPosition(count: 1); refresh()

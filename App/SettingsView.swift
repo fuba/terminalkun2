@@ -21,7 +21,7 @@ struct SettingsView: View {
                     Toggle("画面を自動ロックしない", isOn: $store.configuration.appearance.keepScreenAwake)
                 }
                 Section("入力") {
-                    Toggle("プログラミング用キーボード", isOn: $store.configuration.appearance.customKeyboard)
+                    Toggle("独自キーボード", isOn: $store.configuration.appearance.customKeyboard)
                         .accessibilityIdentifier("customKeyboardMode")
                         .accessibilityValue(store.configuration.appearance.customKeyboard ? "オン" : "オフ")
                     NavigationLink("ユーザー辞書") { DictionaryView(embedded: true) }

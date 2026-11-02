@@ -97,15 +97,25 @@ final class TerminalKun2UITests: XCTestCase {
         app.buttons["完了"].tap(); app.buttons["キーボード"].tap()
         func key(_ name: String) -> XCUIElement { app.descendants(matching: .any)["program-key-" + name].firstMatch }
         XCTAssertTrue(key("e").waitForExistence(timeout: 5))
+        for name in ["e", "c", "h", "o", "space", "language"] { key(name).tap() }
+        XCTAssertTrue(key("kana-a").waitForExistence(timeout: 5))
         let panel = app.descendants(matching: .any)["compositionPanel"].firstMatch
         XCTAssertFalse(panel.exists)
         let surface = app.descendants(matching: .any)["terminalSurface"].firstMatch
         let viewport = surface.frame
-        let keyTop = key("e").frame.minY
-        for name in ["e", "c", "h", "o", "space", "language", "n", "i", "h", "o", "n", "g", "o"] { key(name).tap() }
+        let keyTop = key("kana-a").frame.minY
+        func flick(_ name: String, dx: CGFloat, dy: CGFloat) {
+            let origin = key(name).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            origin.press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: dx, dy: dy)))
+        }
+        flick("kana-na", dx: -36, dy: 0)
+        flick("kana-ha", dx: 0, dy: 36)
+        flick("kana-wa", dx: 0, dy: -36)
+        flick("kana-ka", dx: 0, dy: 36)
+        key("kana-modifier").tap()
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
         XCTAssertEqual(surface.frame.height, viewport.height, accuracy: 1)
-        XCTAssertEqual(key("e").frame.minY, keyTop, accuracy: 1)
+        XCTAssertEqual(key("kana-a").frame.minY, keyTop, accuracy: 1)
         XCTAssertGreaterThanOrEqual(panel.frame.minY, viewport.minY)
         XCTAssertLessThanOrEqual(panel.frame.maxY, viewport.maxY)
         key("space").tap()
@@ -130,6 +140,12 @@ final class TerminalKun2UITests: XCTestCase {
         let preedit = app.descendants(matching: .any)["compositionText"].firstMatch
         XCTAssertFalse(preedit.exists && preedit.label.contains("日本語"))
         key("enter").tap()
+        key("numbers").tap()
+        XCTAssertTrue(key("number-1").waitForExistence(timeout: 3)); key("number-1").tap()
+        key("number-2").tap()
+        key("numbers").tap()
+        XCTAssertTrue(key("kana-a").waitForExistence(timeout: 3))
+        app.buttons["accessory-escape"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(key("symbols").waitForExistence(timeout: 5)); key("symbols").tap()
         XCTAssertTrue(key("=").waitForExistence(timeout: 3))

@@ -81,3 +81,15 @@ App Store Connect のアプリ登録を完了し、実アップロードが成�
 物理 iPhone のカメラと完成した Windows / macOS 送信側を組み合わせた読み取り、物理 iPhone の VPN 越しの SSH、長時間の実機 suspension は今回の simulator 検証とは別の追加確認対象。デスクトップ側は実装依頼 Issue の段階である。Tailscale の API 接続状態は SSH ポートの疎通保証ではない。
 
 同日、QR / Tailscale を含む 0.1.0 (13) の配布署名・IPA 検証・実アップロード後、App Store Connect の処理完了と「個人用」内部グループでの「テスト中」を確認した。追加の暗号化質問なしで自動配信された。詳細は [TestFlight 配信](testflight.md) を参照。物理 iPhone の更新完了は未確認。
+
+## 日本語フリック（2026-11-02）
+
+SwiftPM 34 件（33 成功、既存の実 AI 1 件は環境未指定で skip）、配布・依存監査14件が成功。フリック判定の五方向・中央復帰・斜めの安定・大きな移動の取消、濁点・半濁点・小書きの変形を確認した。実 azooKey 辞書で直接かなの「にほんご」→「日本語」、途中カーソルの文字変更、数字・句読点、変換中の読み編集が成功。既存の実 OpenSSH 統合試験も成功。
+
+iOS 単体は新規3件を含む7件が成功。実 ProgramKeyboard / JapaneseInput / TerminalSession で、離すまでの保留、複数指の独立確定、cancel、配置変更後の古い指の無効化、長押しでかなを繰り返さないこと、リセット後の削除停止、VoiceOver アクション、Shift の導線と消費を検証した。試験用 AppStore は、製品と同じプロセス寿命の fixture とし、短命な MetricKit subscriber の破棄を繰り返さない。
+
+専用 simulator の UI 全7件が成功（`Test-TerminalKun2-2026.11.02_12-07-48-+0900.xcresult`）。実スワイプで「にほんご」を入力し、濁点、変換、縦横回転、44 pt の候補操作、数字との往復、取消、確定と改行を確認した。Shift 補助キーを追加した後の全件再実行は、変更対象外の接続先フォームで標準 iOS キーボードの animation complete 待ちが各操作60秒になったため中断し、新規 simulator で iOS 単体7件とフリック UI を対象に再実行して全て成功した（`Test-TerminalKun2-2026.11.02_12-20-26-+0900.xcresult`）。既に成功した他の試験を削除・skip に置き換える対応は行っていない。
+
+`dev.sh build` と `dev.sh device` が成功。依存・辞書・Package.resolved・鍵・ネットワーク権限は変更していない。自己レビューでは、押下開始時のキー固定、リリース時の一度だけの確定、他配列への古い touch end の持ち越し防止、非アクティブ化・ビュー取り外し・回転でのリピート停止、IME の直接かな編集と既存変換経路、確定による意図しない改行がないことを確認した。
+
+配列・操作・実機での追加確認事項は [日本語フリック](japanese-flick.md) を参照。
