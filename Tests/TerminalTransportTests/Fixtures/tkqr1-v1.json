@@ -1,0 +1,16 @@
+{
+  "aadHex" : "544b515201000102030405060708090a0b0c0d0e0f000000006553f100000000006553f22c101112131415161718191a1b1c1d1e1f202122232425262728292a2b00000075",
+  "ciphertextHex" : "773a316c573f30a412e419e2b7886fc679a63dcdcf6a1cbb28396a19d368c801529dda5996f1f3cc7135212cc3bc630f9ebb16ee083962e1dd085e474f2ab1b427b89464cabf5f165d2ac336085cb9f245810205b66324c9732b2c9a74af349df52751cb7f8886c51926f6275a67345a169f30a82c",
+  "createdAt" : 1700000000,
+  "derivedKeyHex" : "719f226346e35a439b11f2e907f1c2da2fd98e54912db97d629b54c2130ce4ea",
+  "envelopeBase64URL" : "VEtRUgEAAQIDBAUGBwgJCgsMDQ4PAAAAAGVT8QAAAAAAZVPyLBAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKisAAAB1dzoxbFc_MKQS5Bnit4hvxnmmPc3Pahy7KDlqGdNoyAFSndpZlvHzzHE1ISzDvGMPnrsW7gg5YuHdCF5HTyqxtCe4lGTKv18WXSrDNghcufJFgQIFtmMkyXMrLJp0rzSd9SdRy3-IhsUZJvYnWmc0WhafMKgsY7rfTZ9Sgh04Twew_Hdscw",
+  "frames" : [
+    "TKQR1/AAECAwQFBgcICQoLDA0ODw/1/1/7302a74d3d804695fc6c8945be8bf494e57545414c25b0a95fc747c053de2b0f/VEtRUgEAAQIDBAUGBwgJCgsMDQ4PAAAAAGVT8QAAAAAAZVPyLBAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKisAAAB1dzoxbFc_MKQS5Bnit4hvxnmmPc3Pahy7KDlqGdNoyAFSndpZlvHzzHE1ISzDvGMPnrsW7gg5YuHdCF5HTyqxtCe4lGTKv18WXSrDNghcufJFgQIFtmMkyXMrLJp0rzSd9SdRy3-IhsUZJvYnWmc0WhafMKgsY7rfTZ9Sgh04Twew_Hdscw"
+  ],
+  "notice" : "Test-only codec vector. The decoded key is not a private key and MUST fail SSH key import.",
+  "passphrase" : "ABCDEFGHIJKLMNOPQRSTUVWX",
+  "plaintextUTF8" : "{\"format\":\"pem\",\"key\":\"dGVzdC1vbmx5LW5vdC1hLXByaXZhdGUta2V5\",\"kind\":\"ssh-private-key\",\"name\":\"日本語 test vector\"}",
+  "sha256" : "7302a74d3d804695fc6c8945be8bf494e57545414c25b0a95fc747c053de2b0f",
+  "tagHex" : "63badf4d9f52821d384f07b0fc776c73",
+  "version" : 1
+}

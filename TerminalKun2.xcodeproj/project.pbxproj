@@ -13,6 +13,7 @@
 		11869E9C1252484DCF8CFF8F /* CompositionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07EBCEA8BB182A8FA9BF9C8 /* CompositionPanel.swift */; };
 		1B4E8613EFEB9BA586F7FE76 /* AppIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 780D0484115A6BF64DA57848 /* AppIcon.svg */; };
 		1D237B1EA422F7B89A38E41B /* ProgramKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */; };
+		20A23F36B387CF4CE2DF04B1 /* QRKeyImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A02F3DC9BF75CA55CCB6A /* QRKeyImportView.swift */; };
 		24B88A8EC1EE9D7D4A108693 /* ConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */; };
 		2592B571466C3F55AC69EB46 /* TerminalRenderer in Frameworks */ = {isa = PBXBuildFile; productRef = 72AEABE957941C527E776CD9 /* TerminalRenderer */; };
 		27CD6B0A63AEA44C57C2E257 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C07E007ECD43AE302D366BF /* HelpView.swift */; };
@@ -30,7 +31,9 @@
 		9B193867D79EC9983BFF4B10 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5DB6358A14396E6F11A1FC1 /* AppStore.swift */; };
 		A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */; };
 		A1B465DC364E1148AA145020 /* TerminalTransport in Frameworks */ = {isa = PBXBuildFile; productRef = B22DCF3968A66CB6C4A25059 /* TerminalTransport */; };
+		B66B67A0F77E2E5424FA03A5 /* TailscaleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C394576BE2EF655F4709EF2 /* TailscaleView.swift */; };
 		C347833CCC03DC39AB4D8C1D /* TerminalTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A479C8C2C7A8D3856083C54 /* TerminalTypography.swift */; };
+		CA1A2E14751ABD480110BD0D /* QRImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED3ECCE8422E9EC50E3891C2 /* QRImageTests.swift */; };
 		CC6F9141BBB2AC43248CABEB /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */; };
 		E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E55C85640D36423C7DD9AAE /* PresentationTests.swift */; };
 		E987D08DE334A673548A801C /* Mark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 5E5E8C8C22F723E84FA35E9F /* Mark.svg */; };
@@ -64,11 +67,13 @@
 		26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramKeyboard.swift; sourceTree = "<group>"; };
 		3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3C0A02F3DC9BF75CA55CCB6A /* QRKeyImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRKeyImportView.swift; sourceTree = "<group>"; };
 		40CDB75C1A8730C58C45FACD /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
 		42AEF36D6EF139720A1B6949 /* Simulator.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Simulator.entitlements; sourceTree = "<group>"; };
 		45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
 		470CE9976BDA9D4EC7A05604 /* TerminalKun2.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TerminalKun2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E5E8C8C22F723E84FA35E9F /* Mark.svg */ = {isa = PBXFileReference; path = Mark.svg; sourceTree = "<group>"; };
+		6C394576BE2EF655F4709EF2 /* TailscaleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleView.swift; sourceTree = "<group>"; };
 		780D0484115A6BF64DA57848 /* AppIcon.svg */ = {isa = PBXFileReference; path = AppIcon.svg; sourceTree = "<group>"; };
 		7C07E007ECD43AE302D366BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		8566351EB2B9730433B3DDDB /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
@@ -86,6 +91,7 @@
 		E2A5F4951B81F7E554387B5E /* VoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceView.swift; sourceTree = "<group>"; };
 		E434C42F7EA1BFD7C464363C /* terminalkun2 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = terminalkun2; path = .; sourceTree = SOURCE_ROOT; };
 		E64383E950DA8640375F1A18 /* TerminalKun2UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKun2UITests.swift; sourceTree = "<group>"; };
+		ED3ECCE8422E9EC50E3891C2 /* QRImageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRImageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				0E55C85640D36423C7DD9AAE /* PresentationTests.swift */,
+				ED3ECCE8422E9EC50E3891C2 /* QRImageTests.swift */,
 			);
 			path = TerminalAppTests;
 			sourceTree = "<group>";
@@ -181,10 +188,12 @@
 				CBB050C70D49B09ADD96E5DA /* KeyListView.swift */,
 				356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */,
 				D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */,
+				3C0A02F3DC9BF75CA55CCB6A /* QRKeyImportView.swift */,
 				40CDB75C1A8730C58C45FACD /* SecureStore.swift */,
 				00534E178461582FC03C1110 /* SessionTerminalView.swift */,
 				DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */,
 				42AEF36D6EF139720A1B6949 /* Simulator.entitlements */,
+				6C394576BE2EF655F4709EF2 /* TailscaleView.swift */,
 				15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */,
 				00447403DAB03D130456273E /* TerminalKun2App.swift */,
 				0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */,
@@ -334,6 +343,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */,
+				CA1A2E14751ABD480110BD0D /* QRImageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,9 +360,11 @@
 				4148EA51326F4725A5B14BBD /* KeyListView.swift in Sources */,
 				1D237B1EA422F7B89A38E41B /* ProgramKeyboard.swift in Sources */,
 				4513EB73A883CD2493FB714E /* Prompts.swift in Sources */,
+				20A23F36B387CF4CE2DF04B1 /* QRKeyImportView.swift in Sources */,
 				8A2444856EBDBB91DD7E01C8 /* SecureStore.swift in Sources */,
 				31B2AA91DC95AAB6CBB577EF /* SessionTerminalView.swift in Sources */,
 				5AC416E3DCAE817C5BA8B7AC /* SettingsView.swift in Sources */,
+				B66B67A0F77E2E5424FA03A5 /* TailscaleView.swift in Sources */,
 				06563649987E3828B52F5E08 /* TerminalContainerView.swift in Sources */,
 				642ED0989DA3FD43E0B72B63 /* TerminalKun2App.swift in Sources */,
 				772D3B4B7CFD0C15D08FD853 /* TerminalSession.swift in Sources */,

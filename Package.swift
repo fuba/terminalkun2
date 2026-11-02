@@ -22,7 +22,7 @@ let package = Package(
         .target(name: "TerminalRenderer", dependencies: [.product(name: "SwiftTerm", package: "SwiftTerm")]),
         .executableTarget(name: "SSHFixture", dependencies: [.product(name: "Citadel", package: "Citadel")], path: "Tools/SSHFixture"),
         .testTarget(name: "TerminalCoreTests", dependencies: ["TerminalCore"]),
-        .testTarget(name: "TerminalTransportTests", dependencies: ["TerminalTransport"]),
+        .testTarget(name: "TerminalTransportTests", dependencies: ["TerminalTransport"], resources: [.copy("Fixtures")]),
         .testTarget(name: "TerminalIMETests", dependencies: ["TerminalIME"]),
         .testTarget(name: "TerminalRendererTests", dependencies: ["TerminalRenderer"])
     ],

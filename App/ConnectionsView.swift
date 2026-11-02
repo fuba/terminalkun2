@@ -37,6 +37,7 @@ struct ConnectionsView: View {
                     if store.configuration.profiles.isEmpty { ContentUnavailableView("接続先がありません", systemImage: "server.rack", description: Text("＋から追加するか SSH config を取り込めます。")) }
                 }
                 Section {
+                    NavigationLink { TailscaleView() } label: { Label("Tailscale の端末", systemImage: "network") }.accessibilityIdentifier("tailscalePeers")
                     Button("接続先を追加", systemImage: "plus") { editing = ConnectionProfile(name: "", host: "") }
                     Button("SSH config を取り込む", systemImage: "square.and.arrow.down") { importer = true }
                     if store.configuration.sshConfigBookmark != nil { Button("SSH config を再同期", systemImage: "arrow.clockwise") { store.syncSSHConfig() } }
@@ -60,6 +61,7 @@ struct ProfileEditor: View {
     @EnvironmentObject var store: AppStore
     @Environment(\.dismiss) var dismiss
     @State var profile: ConnectionProfile
+    var connectAfterSave: ((ConnectionProfile) -> Void)? = nil
     @State private var showKeys = false
     @State private var validation: String?
     var body: some View {
@@ -93,7 +95,7 @@ struct ProfileEditor: View {
             .navigationTitle("接続先").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("キャンセル") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("保存") { save() }.bold().accessibilityIdentifier("saveProfile") }
+                ToolbarItem(placement: .confirmationAction) { Button(connectAfterSave == nil ? "保存" : "保存して接続") { save() }.bold().accessibilityIdentifier("saveProfile") }
             }
             .sheet(isPresented: $showKeys) { KeyListView() }
         }
@@ -105,7 +107,7 @@ struct ProfileEditor: View {
             try profile.validate()
             if let index = store.configuration.profiles.firstIndex(where: { $0.id == profile.id }) { store.configuration.profiles[index] = profile }
             else { store.configuration.profiles.append(profile) }
-            dismiss()
+            connectAfterSave?(profile); dismiss()
         } catch { validation = error.localizedDescription }
     }
 }
