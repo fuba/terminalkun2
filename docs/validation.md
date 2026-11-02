@@ -44,7 +44,7 @@ UI は再起動をまたぐ保存を実際に検証する。繰り返し実行�
 
 ## 未検証・未対応
 
-Tailscale ネットワーク連携は未実装。参照 macOS 版にある実 Tailnet の端末一覧・オンライン状態・再読み込み・一覧からの SSH 接続は、iPhone 版で検証できる状態になっていない。従来の機能対応表にも漏れていたため追記した。
+初回時点では Tailscale ネットワーク連携が未実装だった。2026-11-02 に公式 API と iOS の既存 Tailscale VPN を使う端末一覧・接続先選択を追加した。今回の検証と、物理 iPhone の追加確認事項は末尾に記載する。
 
 初回移植の検証時点では、この Mac に有効な開発者署名 ID と接続済み物理 iPhone がなかった。その後の TestFlight 配信で、所有者の物理 iPhone へのインストールと起動を確認した。Secure Enclave の物理鍵生成、日本語マイク入力、長時間の OS suspension、MetricKit による実クラッシュ配信は未検証。署名なし app はそのまま実機にインストールできず、Xcode で Team を選んで署名する必要がある。
 
@@ -65,3 +65,17 @@ Tailscale ネットワーク連携は未実装。参照 macOS 版にある実 Ta
 App Store Connect のアプリ登録を完了し、実アップロードが成功した。「個人用」の内部グループに所有者1人を登録し、今後の Xcode ビルドの自動配信を有効にした。初回ビルド 0.1.0 (5) の「テスト中」状態を確認し、所有者から物理 iPhone へインストール・起動できたことを確認した。確認済み暗号化申告を引き継ぐ後続ビルド 0.1.0 (8) も実アップロードし、追加の暗号化質問に止まらず、同じ「個人用」グループで「テスト中」となることを確認した。詳細・再開手順は [TestFlight 配信](testflight.md) を参照。
 
 2026-11-02、字間と変換表示の改善を含む 0.1.0 (12) も配布署名済み IPA の strict 検証・実アップロードが成功し、同じ「個人用」グループで「テスト中」となることを確認した。GUI のサインイン済み状態と CLI の `No Accounts` が一致しない事象、GUI の中間署名と rsync による IPA 作成エラー、その後の復旧経過は配信ドキュメントに記録した。アプリのコード・依存はこの配信確認では変更していない。
+
+## QR と Tailscale の追加検証（2026-11-02）
+
+- SwiftPM 29 件（28 成功、既存の実 AI 1 件は環境未指定で skip）、既存の配信・依存監査 14 件が成功。新規・更新依存はない。Package.resolved と vendor は変更していない。
+- TKQR1 は独立した固定 CryptoKit ベクトル、日本語名、順不同・重複・混在・競合、誤パスフレーズ、改ざん、期限切れ・単調時計タイムアウト、サイズ・base64url・JSON 重複キーを検証した。生成した実 Ed25519 鍵のバイト一致、公開鍵導出も確認した。
+- 実 OpenSSH 統合試験では、元から暗号化された Ed25519 / RSA 3072 を一旦 QR のフレーム形式へ符号化し、収集・復号後の鍵で実認証した。既存のホスト鍵拒否、PTY、日本語・resize、SFTP、ProxyJump、転送 agent も成功。
+- iOS 表示単体 4 件が成功。Core Image で QR 画像を生成し、実 CIDetector で文字列へ戻してから TKQR1 認証付き復号を確認した。Vision はこの simulator の inference context 初期化が失敗したため、製品の AVFoundation カメラとは独立した、モデル推論を要しないネイティブ QR 画像の検証に変更した。検証自体を skip にはしていない。
+- 既存 UI 5 件と Tailscale 設定画面の新規 UI 試験が成功。QR の新規 UI 試験は、設定リストの画面外項目をスクロールする修正後、専用 simulator の別実行で成功。カメラ画面の開始・キャンセル・鍵管理への復帰を確認した。最終 QR 結果は `Test-TerminalKun2-2026.11.02_11-21-41-+0900.xcresult`。
+- 専用 simulator の製品アプリ画面で、実 Tailscale の読み取り専用 OAuth credential を入力した。実 token 交換・HTTPS devices API による所有 Tailnet の一覧とオンライン状態、一覧選択から正しい Tailnet IP が入った SSH 接続先画面へ進むことを確認した。資格情報・実端末一覧・私有画面は公開成果物へ含めない。
+- `bash scripts/dev.sh build` と `bash scripts/dev.sh device` が成功。カメラ用途の説明と、QR タイムアウトの単調時計用途の privacy reason 35F9.1 を同梱する。
+
+自己レビューでは、JSON 重複キーと入力上限、AAD・nonce・KDF の固定条件、期限の二重確認、キャンセル後の遅延結果の破棄、実鍵解析後の明示保存、Keychain の保管属性と重複鍵拒否を確認した。API は公式 HTTPS のみに送り、リダイレクト・cookie・cache・URL credential storage を使わず、OAuth では読み取り scope だけを要求する。既存の認証・ホスト鍵検証を迂回せず、プロフィール編集後は dismissal 後に接続する。
+
+物理 iPhone のカメラと完成した Windows / macOS 送信側を組み合わせた読み取り、物理 iPhone の VPN 越しの SSH、長時間の実機 suspension は今回の simulator 検証とは別の追加確認対象。デスクトップ側は実装依頼 Issue の段階である。Tailscale の API 接続状態は SSH ポートの疎通保証ではない。

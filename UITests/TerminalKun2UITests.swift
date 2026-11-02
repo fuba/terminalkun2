@@ -1,6 +1,28 @@
 import XCTest
 
 final class TerminalKun2UITests: XCTestCase {
+    func testTailscaleSetupIsReachable() {
+        let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
+        app.buttons["接続先"].tap()
+        app.buttons["tailscalePeers"].tap()
+        XCTAssertTrue(app.textFields["tailnetName"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.secureTextFields["tailnetToken"].exists)
+        XCTAssertFalse(app.buttons["tailnetSave"].isEnabled)
+    }
+    func testQRScannerIsReachable() {
+        let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
+        app.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        let keys = app.buttons["秘密鍵・公開鍵"]
+        for _ in 0..<4 where !keys.isHittable { app.swipeUp() }
+        keys.tap()
+        let scan = app.buttons["scanPrivateKeyQR"]
+        if !scan.isHittable { app.swipeUp() }
+        XCTAssertTrue(scan.waitForExistence(timeout: 5)); scan.tap()
+        XCTAssertTrue(app.staticTexts["qrScanProgress"].waitForExistence(timeout: 5))
+        app.buttons["キャンセル"].tap()
+        XCTAssertTrue(app.buttons["scanPrivateKeyQR"].waitForExistence(timeout: 5))
+    }
     override func tearDown() {
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()

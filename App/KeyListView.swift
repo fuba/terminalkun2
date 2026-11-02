@@ -13,6 +13,7 @@ struct KeyListView: View {
     @State private var importedPEM = ""
     @State private var passphrase = ""
     @State private var showImport = false
+    @State private var scanQR = false
     @State private var selected: SavedKey?
     @State private var removing: SavedKey?
     @State private var renamed: SavedKey?
@@ -43,8 +44,12 @@ struct KeyListView: View {
                 Button("Ed25519 鍵を生成", systemImage: "plus") { generate() }.disabled(generating || name.isEmpty).accessibilityIdentifier("generateKey")
                 if KeyMaterial.hardwareAvailable { Button("Secure Enclave 鍵を生成", systemImage: "lock.shield") { generateHardware() }.disabled(name.isEmpty) }
             }
-            Section("詳細") { Button("既存の秘密鍵を取り込む", systemImage: "square.and.arrow.down") { importer = true } }
+            Section("取り込み") {
+                Button("QR をカメラで読み取る", systemImage: "qrcode.viewfinder") { scanQR = true }.accessibilityIdentifier("scanPrivateKeyQR")
+                Button("既存の秘密鍵を取り込む", systemImage: "square.and.arrow.down") { importer = true }
+            }
         }.navigationTitle("SSH 鍵").navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $scanQR) { QRKeyImportView() }
             .sheet(item: $selected) { key in
                 NavigationStack {
                     Form {

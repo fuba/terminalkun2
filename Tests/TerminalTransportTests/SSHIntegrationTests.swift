@@ -51,7 +51,7 @@ final class SSHIntegrationTests: XCTestCase {
         guard ready else { return }
         var profile = ConnectionProfile(name: "loopback", host: "127.0.0.1", user: NSUserName(), port: port)
         profile.agentForwarding = true
-        let pem = try String(contentsOf: folder.appendingPathComponent("client"), encoding: .utf8)
+        let pem = try qrRoundtrip(String(contentsOf: folder.appendingPathComponent("client"), encoding: .utf8))
         let credentials = SSHCredentials(privateKey: pem, passphrase: "integration-passphrase")
         let rejected = SSHConnection()
         do {
@@ -111,7 +111,7 @@ final class SSHIntegrationTests: XCTestCase {
         let rsaPublic = try Data(contentsOf: folder.appendingPathComponent("rsa.pub"))
         let authorized = try FileHandle(forWritingTo: folder.appendingPathComponent("authorized_keys"))
         _ = try authorized.seekToEnd(); try authorized.write(contentsOf: rsaPublic); try authorized.close()
-        let rsaPEM = try String(contentsOf: folder.appendingPathComponent("rsa"), encoding: .utf8)
+        let rsaPEM = try qrRoundtrip(String(contentsOf: folder.appendingPathComponent("rsa"), encoding: .utf8))
         let rsaConnection = SSHConnection()
         var rsaAuthenticated = false
         try await rsaConnection.run(profile: profile, credentials: SSHCredentials(privateKey: rsaPEM, passphrase: "rsa-passphrase"), cols: 80, rows: 24,
@@ -131,6 +131,16 @@ final class SSHIntegrationTests: XCTestCase {
         let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = arguments
         process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
         try process.run(); process.waitUntilExit(); XCTAssertEqual(process.terminationStatus, 0)
+    }
+    private func qrRoundtrip(_ pem: String) throws -> String {
+        let now = Date(), phrase = "ABCDEFGHIJKLMNOPQRSTUVWX"
+        let payload = try QRKeyPayload(name: "owned SSH integration", format: "openssh", key: Data(pem.utf8))
+        let frames = try QRTransfer.seal(payload, passphrase: phrase, now: now)
+        var collector = QRTransferCollector(); var packet: QRTransfer?
+        for frame in frames.reversed() { packet = try collector.append(frame, now: now) ?? packet }
+        let imported = try XCTUnwrap(packet).open(passphrase: phrase, now: now)
+        XCTAssertEqual(imported.key, Data(pem.utf8))
+        return try XCTUnwrap(String(data: imported.key, encoding: .utf8))
     }
     private static func unusedPort() throws -> Int {
         let fd = socket(AF_INET, SOCK_STREAM, 0); guard fd >= 0 else { throw AppError.message("socket failed") }; defer { Darwin.close(fd) }

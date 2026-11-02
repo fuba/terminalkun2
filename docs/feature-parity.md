@@ -9,7 +9,8 @@
 | 独自キーボード、英数・日本語、修飾キー、Fn、記号 | UIKit のマルチタッチ入力。sticky / double-tap lock、独立した長押しリピート、回転・離脱で停止。標準 iOS IME と切り替え可 |
 | Mozc 完全辞書・予測・連文節・学習・ユーザー辞書 | 同梱 azooKey 実辞書に適応。文節選択、境界変更、予測、端末内の候補学習、永続ユーザー辞書。確定と改行を分離。入力中だけカーソル付近に読み・候補を重ね、常設欄の高さを取らない |
 | プロフィール、お気に入り、タブ復元 | ネイティブ List / Form。順序・名前・選択位置・下書き復元。SSH は再認証・再接続待ち |
-| Tailscale ネットワーク連携（参照 macOS 版） | **未実装。** Tailnet の端末一覧取得、オンライン状態、再読み込み、一覧からの SSH 接続がない。ホスト名・IP の手入力による SSH 接続とは別の機能 |
+| Tailscale ネットワーク連携（参照 macOS 版） | 公式 iOS Tailscale VPN と連携。読み取り専用 OAuth / API による実 Tailnet 一覧、制御サーバーへの接続状態、再読み込み、一覧からの接続先作成・SSH 接続。初回に API 資格情報を設定。実機 VPN 越しの SSH は追加確認対象 |
+| デスクトップ版からの QR 鍵転送 | カメラで TKQR1 の単一・分割 QR を収集し、認証付き復号、実鍵の fingerprint 確認後に device-only Keychain へ保存。送信側は terminal #3 / terminal2 #6 に実装依頼中 |
 | OpenSSH config | Files 取り込み、永続 bookmark と起動時再同期、Host / HostName / User / Port / ワイルドカード / 否定パターン / ProxyJump。Include / Match は通知。ProxyCommand 等の任意実行設定は接続を止めて明示 |
 | SSH PTY、パスワード、鍵、ホスト鍵 | 実 Citadel / NIOSSH 接続。Ed25519 生成、暗号化 Ed25519 / RSA 取り込み、ECDSA、厳格なホスト鍵照合・Keychain 保管。公開鍵のみコピー・共有・保存、名称変更・削除 |
 | keep-alive、自動再接続 | 15秒間隔、3回失敗判定、同じタブで上限60秒の指数バックオフ。入力とリサイズは順序を保つ単一キュー |
@@ -35,7 +36,7 @@
 
 ## 完了判定に残っている項目
 
-Tailscale 連携は参照 macOS 版の `TailscalePeer.discover()` と接続パネルに存在するが、iPhone 版の実装と従来の対応表から漏れていた。これは完全移植の残作業に含める。iPhone 上で実 Tailnet の端末とオンライン状態を取得し、再読み込みと SSH 接続先への選択が動作するまで完了とはしない。Mac の CLI を iPhone で呼べると仮定したり、サンプル端末一覧で実装済みと扱ったりしない。
+従来漏れていた Tailscale 一覧は、iPhone から直接公式 HTTPS API を使う形で実装した。Mac の CLI を iPhone で呼ぶ前提やサンプル端末一覧は使わない。公式 VPN 越しの物理 iPhone の SSH 接続と、両デスクトップ送信側の完成後の QR カメラ相互運用は追加確認対象。操作・保管・方式は [QR と Tailscale](qr-and-tailscale.md) を参照。
 
 ## 保管と再起動
 
