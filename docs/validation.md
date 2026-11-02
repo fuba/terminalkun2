@@ -79,3 +79,5 @@ App Store Connect のアプリ登録を完了し、実アップロードが成�
 自己レビューでは、JSON 重複キーと入力上限、AAD・nonce・KDF の固定条件、期限の二重確認、キャンセル後の遅延結果の破棄、実鍵解析後の明示保存、Keychain の保管属性と重複鍵拒否を確認した。API は公式 HTTPS のみに送り、リダイレクト・cookie・cache・URL credential storage を使わず、OAuth では読み取り scope だけを要求する。既存の認証・ホスト鍵検証を迂回せず、プロフィール編集後は dismissal 後に接続する。
 
 物理 iPhone のカメラと完成した Windows / macOS 送信側を組み合わせた読み取り、物理 iPhone の VPN 越しの SSH、長時間の実機 suspension は今回の simulator 検証とは別の追加確認対象。デスクトップ側は実装依頼 Issue の段階である。Tailscale の API 接続状態は SSH ポートの疎通保証ではない。
+
+同日、QR / Tailscale を含む 0.1.0 (13) の配布署名・IPA 検証・実アップロード後、App Store Connect の処理完了と「個人用」内部グループでの「テスト中」を確認した。追加の暗号化質問なしで自動配信された。詳細は [TestFlight 配信](testflight.md) を参照。物理 iPhone の更新完了は未確認。
