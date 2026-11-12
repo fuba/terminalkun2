@@ -8,6 +8,8 @@ final class TerminalKun2UITests: XCTestCase {
         XCTAssertTrue(app.textFields["tailnetName"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.secureTextFields["tailnetToken"].exists)
         XCTAssertFalse(app.buttons["tailnetSave"].isEnabled)
+        app.buttons["Tailscale の接続手順"].tap()
+        XCTAssertTrue(app.navigationBars["Tailscale の接続手順"].waitForExistence(timeout: 5))
     }
     func testQRScannerIsReachable() {
         let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
@@ -48,6 +50,42 @@ final class TerminalKun2UITests: XCTestCase {
         app.buttons["完了"].tap()
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "iPhone terminal"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
+    func testTerminalTextSelectionCopyAndLinkTap() {
+        let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
+        app.buttons["設定"].tap()
+        let mode = app.switches["customKeyboardMode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 5))
+        if mode.value as? String == "オン" {
+            if mode.switches.firstMatch.exists { mode.switches.firstMatch.tap() } else { mode.tap() }
+        }
+        app.buttons["完了"].tap()
+        if app.buttons["openLocal"].exists { app.buttons["openLocal"].tap() }
+        else { app.buttons["新しいタブ"].tap(); app.buttons["openLocalFromConnections"].tap() }
+        let surface = app.descendants(matching: .any)["terminalSurface"].firstMatch
+        XCTAssertTrue(surface.waitForExistence(timeout: 5))
+        let origin = surface.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+        app.buttons["キーボード"].tap()
+        app.typeText("echo ")
+        app.buttons["テキスト選択"].tap()
+        origin.withOffset(CGVector(dx: 38, dy: 8)).doubleTap()
+        app.buttons["選択範囲をコピー"].tap()
+        app.buttons["テキスト選択を終了"].tap()
+        app.buttons["貼り付け"].tap()
+        app.typeText("\n")
+
+        app.buttons["端末内を検索"].tap()
+        let search = app.textFields["terminalSearch"]; search.tap(); search.typeText("echo terminalkun2\n")
+        XCTAssertNotEqual(app.staticTexts["searchMatchCount"].label, "0/0")
+        app.buttons["検索を閉じる"].tap()
+
+        if !app.keyboards.firstMatch.exists { app.buttons["キーボード"].tap() }
+        app.typeText("clear\n")
+        app.typeText("echo https://example.test/a\n")
+        origin.withOffset(CGVector(dx: 80, dy: 28)).tap()
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCTAssertTrue(safari.wait(for: .runningForeground, timeout: 8))
+    }
+
     func testConnectionProfilePersists() {
         let app = XCUIApplication(); app.launchEnvironment["TERMINALKUN2_UI_TESTS"] = "1"; app.launch()
         app.buttons["接続先"].tap()
@@ -97,8 +135,14 @@ final class TerminalKun2UITests: XCTestCase {
         app.buttons["完了"].tap(); app.buttons["キーボード"].tap()
         func key(_ name: String) -> XCUIElement { app.descendants(matching: .any)["program-key-" + name].firstMatch }
         XCTAssertTrue(key("e").waitForExistence(timeout: 5))
+        app.buttons["accessory-sequences"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "コピー (^A)")).firstMatch.waitForExistence(timeout: 5))
+        key("sequences").tap()
+        XCTAssertTrue(key("e").waitForExistence(timeout: 5))
         for name in ["e", "c", "h", "o", "space", "language"] { key(name).tap() }
         XCTAssertTrue(key("kana-a").waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(key("enter").frame.height, key("kana-a").frame.height * 1.8)
+        XCTAssertFalse(key("hide").exists)
         let panel = app.descendants(matching: .any)["compositionPanel"].firstMatch
         XCTAssertFalse(panel.exists)
         let surface = app.descendants(matching: .any)["terminalSurface"].firstMatch

@@ -13,13 +13,13 @@
 | デスクトップ版からの QR 鍵転送 | カメラで TKQR1 の単一・分割 QR を収集し、認証付き復号、実鍵の fingerprint 確認後に device-only Keychain へ保存。送信側は terminal #3 / terminal2 #6 に実装依頼中 |
 | OpenSSH config | Files 取り込み、永続 bookmark と起動時再同期、Host / HostName / User / Port / ワイルドカード / 否定パターン / ProxyJump。Include / Match は通知。ProxyCommand 等の任意実行設定は接続を止めて明示 |
 | SSH PTY、パスワード、鍵、ホスト鍵 | 実 Citadel / NIOSSH 接続。Ed25519 生成、暗号化 Ed25519 / RSA 取り込み、ECDSA、厳格なホスト鍵照合・Keychain 保管。公開鍵のみコピー・共有・保存、名称変更・削除 |
-| keep-alive、自動再接続 | 15秒間隔、3回失敗判定、同じタブで上限60秒の指数バックオフ。入力とリサイズは順序を保つ単一キュー |
+| keep-alive、自動再接続 | 15秒間隔の SSH global request と90秒の応答猶予、同じタブで上限60秒の指数バックオフ。入力とリサイズは順序を保つ単一キュー |
 | SFTP、ファイル・画像貼り付け | Files、共有 URL、ドラッグ＆ドロップ、クリップボード画像。ランダムな private `/tmp` ディレクトリ、排他作成、シェル引用済みパスを挿入 |
 | VT / xterm、True Color、CJK、代替画面 | SwiftTerm の実 VT エンジンと UIKit / Metal。DA / DSR、カーソルモード、マウス、選択、検索、bracketed paste、OSC タイトル・ディレクトリ |
-| リンク・クリップボード | OSC 8 と検出リンクは http(s) のみ起動。OSC 52 書き込みは1 MiB制限・内容確認必須。読み出しは拒否 |
+| リンク・クリップボード | OSC 8 と検出リンクはタップで http(s) を起動。VT の折り返しと画面幅で折り返された URL に対応。OSC 52 書き込みは1 MiB制限・内容確認必須。読み出しは拒否 |
 | Sixel / iTerm2 / Kitty 画像 | SwiftTerm の同梱デコーダー。Kitty の分割、キャッシュ、アニメーション、Unicode placeholder を含む。リモートから端末内ファイル・共有メモリへのアクセスは許可しない |
-| tmux 操作 | マウス、ホイール、独立 exec チャネルの mouse 設定と global prefix 取得。prefix を検証して左右スワイプを送信。二本指でアプリのタブ切り替え |
-| 表示設定・フォント・キー割り当て | 5配色、背景不透明度、文字サイズ、スクロールバック行数、TTF/OTF、記録可能な物理キー設定、ピンチ拡縮。⌘ を iOS の既定操作へ適応 |
+| tmux 操作 | マウス、ホイール、独立 exec チャネルの mouse 設定と global prefix 取得。prefix を検証して左右スワイプを送信。キー列モードは既定で Ctrl+A → Esc と Ctrl+B → [ に対応。二本指でアプリのタブ切り替え |
+| 表示設定・フォント・キー割り当て | 5配色、背景不透明度、6〜32pt の文字サイズ、スクロールバック行数、TTF/OTF、記録可能な物理キー設定、ピンチ拡縮。⌘ を iOS の既定操作へ適応 |
 | ローカル forkpty シェル | iOS の制約に適応した実ファイル・HTTP コマンド環境。任意の実行ファイルを動かす POSIX シェルとは異なる |
 | Android Foreground Service | iOS の短時間 background task と、復帰後の再接続へ適応。サーバーの tmux によりプロセスを保持 |
 | セッションログ | opt-in、ANSI / OSC / DCS / APC / C1 除去、UTF-8 境界保持、4 MiB / 最大20ファイル、共有。診断ログとは別扱い |

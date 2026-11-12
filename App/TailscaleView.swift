@@ -73,6 +73,9 @@ struct TailscaleView: View {
 
     var body: some View {
         List {
+            Section {
+                NavigationLink("Tailscale の接続手順") { TailscaleHelpView() }
+            }
             if !browser.configured || changeCredentials {
                 Section("Tailscale API") {
                     Picker("認証", selection: $useOAuth) { Text("OAuth（継続利用）").tag(true); Text("アクセストークン").tag(false) }
@@ -83,7 +86,6 @@ struct TailscaleView: View {
                         browser.refresh(replacement: .init(tailnet: tailnet, token: useOAuth ? "" : accessToken, clientID: useOAuth ? clientID : nil, secret: useOAuth ? accessToken : nil))
                         accessToken = ""
                     }.disabled(browser.loading || accessToken.isEmpty || (useOAuth && clientID.isEmpty)).accessibilityIdentifier("tailnetSave")
-                    Link("読み取り専用資格情報の作成方法", destination: URL(string: "https://tailscale.com/docs/reference/trust-credentials")!)
                     Text("devices:core:read 権限のアクセストークンを使用します。資格情報はこの端末だけの Keychain に保存します。SSH 通信には、iPhone の公式 Tailscale アプリで同じ Tailnet に接続してください。")
                         .foregroundStyle(.secondary)
                 }

@@ -134,7 +134,23 @@ struct SessionPane: View {
             HStack {
                 Button { session.terminal.isFirstResponder ? session.terminal.resignFirstResponder() : session.terminal.becomeFirstResponder() } label: { Image(systemName: "keyboard") }.accessibilityLabel("キーボード")
                 Spacer()
-                Button { session.pasteClipboard() } label: { Image(systemName: "document.on.clipboard") }.accessibilityLabel("貼り付け")
+                if session.selectingText {
+                    Button {
+                        if session.terminal.selectionActive { session.terminal.copy(nil) }
+                    } label: {
+                        Image(systemName: "document.on.document").frame(width: 44, height: 44).contentShape(Rectangle())
+                    }.accessibilityLabel("選択範囲をコピー")
+                } else {
+                    Button { session.pasteClipboard() } label: { Image(systemName: "document.on.clipboard") }.accessibilityLabel("貼り付け")
+                }
+                Spacer()
+                Button { session.toggleTextSelection() } label: {
+                    Image(systemName: session.selectingText ? "selection.pin.in.out" : "text.cursor")
+                        .foregroundStyle(session.selectingText ? Color.accentColor : Color.primary)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .accessibilityLabel(session.selectingText ? "テキスト選択を終了" : "テキスト選択")
+                .accessibilityAddTraits(session.selectingText ? .isSelected : [])
                 Spacer()
                 Button { showSearch.toggle() } label: { Image(systemName: "magnifyingglass") }.accessibilityLabel("端末内を検索")
                 Spacer()

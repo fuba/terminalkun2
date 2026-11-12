@@ -285,6 +285,26 @@ extension NIOSSHHandler {
         self.sendGlobalRequestsIfPossible()
     }
 
+    /// Sends an OpenSSH keepalive on the channel's event loop.
+    /// Either SSH request reply proves the peer is reachable.
+    public func sendKeepalive(promise: EventLoopPromise<Void>) {
+        let reply = promise.futureResult.eventLoop.makePromise(of: ByteBuffer?.self)
+        reply.futureResult.whenComplete { result in
+            switch result {
+            case .success:
+                promise.succeed(())
+            case .failure(let error as NIOSSHError) where error.type == .globalRequestRefused:
+                promise.succeed(())
+            case .failure(let error):
+                promise.fail(error)
+            }
+        }
+        self.sendGlobalRequestMessage(
+            .init(wantReply: true, type: .unknown("keepalive@openssh.com", ByteBuffer())),
+            promise: reply
+        )
+    }
+
     /// Sends a global request of any kind. This is commonly used for TCP forwarding requests, but can be used to extend the protocol.
     ///
     /// This function is **not** thread-safe: it may only be called from on the channel.

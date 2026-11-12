@@ -49,3 +49,19 @@ final class PresentationTests: XCTestCase {
         XCTAssertTrue(button.accessibilityTraits.contains(.selected))
     }
 }
+
+extension PresentationTests {
+    func testLinkHitTestingUsesActualSixPointGrid() throws {
+        let view = SessionTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 120), font: nil, options: TerminalOptions(cols: 80, rows: 24))
+        view.font = TerminalTypography.font(name: "", size: 6)
+        view.feed(text: "日  https://example.test/a\r\n")
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            view.visibleRowsText(0..<1).first?.contains("https://") == true
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 3), .completed)
+        let cell = view.caretFrame.size
+        let point = CGPoint(x: cell.width * 5.5, y: cell.height * 0.5)
+        XCTAssertEqual(view.webLink(at: point)?.absoluteString, "https://example.test/a")
+        XCTAssertNil(view.webLink(at: CGPoint(x: cell.width * 1.5, y: point.y)))
+    }
+}

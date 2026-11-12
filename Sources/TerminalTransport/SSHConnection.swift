@@ -42,7 +42,6 @@ public final class SSHConnection {
     private var parents: [SSHClient] = []
     private var writerTask: Task<Void, Never>?
     private var heartbeatTask: Task<Void, Never>?
-    private var heartbeatProbe: Task<Void, Never>?
     private var generation = UUID()
     private var agent: AgentIdentity?
     public var connected: Bool { client?.isConnected == true }
@@ -85,6 +84,7 @@ public final class SSHConnection {
                 let next: SSHClient
                 if let active { next = try await active.jump(to: settings(jump, auth)) }
                 else { next = try await SSHClient.connect(to: settings(jump, auth)) }
+                guard token == generation, !Task.isCancelled else { try? await next.close(); throw CancellationError() }
                 parents.append(next); active = next
             }
             let settings = try settings(profile, credentials)
@@ -93,11 +93,14 @@ public final class SSHConnection {
             else { connection = try await SSHClient.connect(to: settings) }
             guard token == generation, !Task.isCancelled else { try? await connection.close(); throw CancellationError() }
             client = connection
-            defer { writerTask?.cancel(); heartbeatTask?.cancel(); heartbeatProbe?.cancel(); continuation?.finish(); continuation = nil }
+            defer {
+                if generation == token { writerTask?.cancel(); heartbeatTask?.cancel(); continuation?.finish(); continuation = nil }
+            }
             let request = SSHChannelRequestEvent.PseudoTerminalRequest(wantReply: true, term: "xterm-256color",
                 terminalCharacterWidth: max(1, cols), terminalRowHeight: max(1, rows),
                 terminalPixelWidth: 0, terminalPixelHeight: 0, terminalModes: .init([.ECHO: 1, .ICANON: 1, .ISIG: 1]))
             var outputEndedNormally = false
+            var transportFailed = false
             do { try await connection.withPTY(request, forwardAgent: self.agent != nil) { output, writer in
                 let (stream, continuation) = AsyncStream<WriteEvent>.makeStream()
                 self.continuation = continuation
@@ -110,22 +113,23 @@ public final class SSHConnection {
                             case .resize(let cols, let rows): try await writer.changeSize(cols: max(1, cols), rows: max(1, rows), pixelWidth: 0, pixelHeight: 0)
                             }
                         }
-                    } catch { try? await connection.close() }
+                    } catch {
+                        guard !Task.isCancelled, self.generation == token else { return }
+                        transportFailed = true
+                        try? await connection.close()
+                    }
                 }
                 self.heartbeatTask = Task { @MainActor in
-                    var missedReplies = 0
-                    while !Task.isCancelled {
-                        do { try await Task.sleep(for: .seconds(15)); try Task.checkCancellation() }
-                        catch { return }
-                        if self.heartbeatProbe != nil { missedReplies += 1 }
-                        if missedReplies >= 3 || !connection.isConnected { try? await connection.close(); return }
-                        if self.heartbeatProbe == nil {
-                            self.heartbeatProbe = Task { @MainActor in
-                                defer { self.heartbeatProbe = nil }
-                                do { _ = try await connection.executeCommand("true", maxResponseSize: 1024); missedReplies = 0 }
-                                catch { missedReplies += 1 }
-                            }
+                    do {
+                        while !Task.isCancelled {
+                            try await Task.sleep(for: .seconds(15))
+                            try Task.checkCancellation()
+                            try await self.probeLiveness(timeout: .seconds(90))
                         }
+                    } catch {
+                        guard !Task.isCancelled, self.generation == token else { return }
+                        transportFailed = true
+                        try? await connection.close()
                     }
                 }
                 onReady()
@@ -141,9 +145,10 @@ public final class SSHConnection {
                 // Citadel closes the PTY again after receiving the server's EOF.
                 guard outputEndedNormally, case ChannelError.alreadyClosed = error else { throw error }
             }
-            try? await connection.close()
-            for parent in parents.reversed() { try? await parent.close() }
-            parents = []; client = nil
+            try Task.checkCancellation()
+            guard generation == token else { throw CancellationError() }
+            guard !transportFailed, connection.isConnected else { throw SSHFailure.disconnected }
+            await close()
         } catch {
             if generation == token { await close() }
             throw error
@@ -154,10 +159,16 @@ public final class SSHConnection {
     public func close() async {
         agent?.setAvailable(false); agent = nil
         generation = UUID(); continuation?.finish(); continuation = nil
-        writerTask?.cancel(); heartbeatTask?.cancel(); heartbeatProbe?.cancel(); heartbeatProbe = nil
+        writerTask?.cancel(); writerTask = nil
+        heartbeatTask?.cancel(); heartbeatTask = nil
         let connection = client; client = nil
+        let jumpClients = parents; parents = []
         try? await connection?.close()
-        for parent in parents.reversed() { try? await parent.close() }; parents = []
+        for parent in jumpClients.reversed() { try? await parent.close() }
+    }
+    func probeLiveness(timeout: TimeAmount) async throws {
+        guard let client, client.isConnected else { throw SSHFailure.disconnected }
+        try await client.sendKeepalive(timeout: timeout)
     }
     public func setAgentActive(_ active: Bool) { agent?.setAvailable(active) }
     public func execute(_ command: String) async throws -> String {

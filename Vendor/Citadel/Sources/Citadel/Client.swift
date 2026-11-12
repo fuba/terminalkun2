@@ -365,6 +365,21 @@ public final class SSHClient {
         onNewSession(session)
     }
     
+    /// Probes the SSH transport without opening a session or executing a remote command.
+    public func sendKeepalive(timeout: TimeAmount) async throws {
+        let session = self.session
+        try await session.channel.eventLoop.flatSubmit {
+            let loop = session.channel.eventLoop
+            let reply = loop.makePromise(of: Void.self)
+            let deadline = loop.scheduleTask(in: timeout) { reply.fail(KeepaliveTimeout()) }
+            reply.futureResult.whenComplete { _ in deadline.cancel() }
+            session.sshHandler.value.sendKeepalive(promise: reply)
+            return reply.futureResult
+        }.get()
+    }
+
+    private struct KeepaliveTimeout: Error {}
+
     public func close() async throws {
         self.userInitiatedClose = true
         try await self.session.channel.close()

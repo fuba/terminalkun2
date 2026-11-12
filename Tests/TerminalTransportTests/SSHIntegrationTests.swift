@@ -60,16 +60,36 @@ final class SSHIntegrationTests: XCTestCase {
             XCTFail("Untrusted host was accepted")
         } catch { /* Expected: the host validator rejects the real SSH handshake. */ }
 
+        let shell = folder.appendingPathComponent("fixture-shell")
+        try """
+        unset ENV BASH_ENV
+        stty -echo
+        printf 'TEST-SHELL-READY\\n'
+        exec /bin/sh -s +o emacs +o vi
+        """.write(to: shell, atomically: true, encoding: .utf8)
         let connection = SSHConnection(), authenticated = expectation(description: "real PTY ready"), outputReady = expectation(description: "ordered Japanese output")
+        let shellReady = expectation(description: "fixture shell started without user line editors")
         let forwarded = expectation(description: "real OpenSSH uses the forwarded agent")
+        let tmux = ["/opt/homebrew/bin/tmux", "/usr/local/bin/tmux", "/usr/bin/tmux"].first(where: FileManager.default.isExecutableFile(atPath:))
+        var detached: XCTestExpectation?
+        var didDetach = false, didStartShell = false
         var received = Data(), completed = false, agentCompleted = false
         let task = Task { @MainActor in
             try await connection.run(profile: profile, credentials: credentials, cols: 80, rows: 24,
                 verify: { _, key in XCTAssertEqual(key, hostPublic) },
                 onReady: { authenticated.fulfill() }, onData: { data in
                     received.append(data)
+                    if !didStartShell && String(decoding: received, as: UTF8.self).contains("TEST-SHELL-READY") {
+                        didStartShell = true; shellReady.fulfill()
+                    }
+                    if !didDetach && String(decoding: received, as: UTF8.self).contains("TMUX-DETACHED-OK") { didDetach = true; detached?.fulfill() }
                     if !completed && String(decoding: received, as: UTF8.self).contains("DONE-20-日本語") { completed = true; outputReady.fulfill() }
-                    if !agentCompleted && String(decoding: received, as: UTF8.self).contains("FORWARDED-AGENT-OK") { agentCompleted = true; forwarded.fulfill() }
+                    if !agentCompleted {
+                        let text = String(decoding: received, as: UTF8.self)
+                        if text.contains("FORWARDED-AGENT-OK"), text.contains("SSH-SHELL-READY") {
+                            agentCompleted = true; forwarded.fulfill()
+                        }
+                    }
                 })
         }
         let expiry = Task { @MainActor in try? await Task.sleep(for: .seconds(30)); if !Task.isCancelled { await connection.close() } }
@@ -77,7 +97,9 @@ final class SSHIntegrationTests: XCTestCase {
         defer { task.cancel(); Task { await connection.close() } }
         await fulfillment(of: [authenticated], timeout: 20)
         guard connection.connected else { XCTFail("SSH did not connect"); return }
-        connection.send(Data("stty -echo\r".utf8))
+        try await connection.probeLiveness(timeout: .seconds(5))
+        connection.send(Data(("exec /bin/sh " + shell.path + "\r").utf8))
+        await fulfillment(of: [shellReady], timeout: 5)
         for cycle in 1...20 {
             connection.resize(cols: 60 + cycle, rows: 20 + cycle)
             connection.send(Data("printf 'DONE-\(cycle)-日本語\\n'\r".utf8))
@@ -98,10 +120,28 @@ final class SSHIntegrationTests: XCTestCase {
         _ = try await connection.execute("rmdir -- " + Shell.quote(URL(fileURLWithPath: uploaded).deletingLastPathComponent().path))
         let known = folder.appendingPathComponent("known_hosts")
         try "[127.0.0.1]:\(port) \(hostPublic)\n".write(to: known, atomically: true, encoding: .utf8)
-        let nested = "ssh -n -o UserKnownHostsFile=" + Shell.quote(known.path) + " -o StrictHostKeyChecking=yes -o IdentityFile=/dev/null -o PreferredAuthentications=publickey -p \(port) " + Shell.quote(NSUserName() + "@127.0.0.1") + " 'printf FORWARDED-AGENT-OK'\r"
+        let nested = "ssh -n -o UserKnownHostsFile=" + Shell.quote(known.path) + " -o StrictHostKeyChecking=yes -o IdentityFile=/dev/null -o PreferredAuthentications=publickey -p \(port) " + Shell.quote(NSUserName() + "@127.0.0.1") + " 'printf FORWARDED-AGENT-OK'; printf '\\nSSH-SHELL-READY\\n'\r"
         connection.send(Data(nested.utf8))
         await fulfillment(of: [forwarded], timeout: 15)
         FileHandle.standardError.write(Data("SSH_TEST_STAGE=agent-authenticated\n".utf8))
+        if let tmux {
+            let command = Shell.quote(tmux) + " -S " + Shell.quote(folder.appendingPathComponent("tmux").path)
+            _ = try await connection.execute(command + " -f /dev/null new-session -d -s tk2 /bin/sh \\; set-option -g prefix C-a \\; bind-key Escape copy-mode")
+            defer { try? run(tmux, ["-S", folder.appendingPathComponent("tmux").path, "kill-server"]) }
+            connection.send(Data((command + " attach-session -t tk2; printf 'TMUX-DETACHED-OK\\n'\r").utf8))
+            let clientCount = try await waitForTmux(connection, command: command + " display-message -p -t tk2 '#{session_attached}'", expected: "1")
+            guard clientCount == "1" else {
+                XCTFail("tmux did not attach. Output: " + String(decoding: received.suffix(768), as: UTF8.self))
+                return
+            }
+            connection.send(Data(try XCTUnwrap(KeySequence.encode("^A ^[")).utf8))
+            let mode = try await waitForTmux(connection, command: command + " display-message -p -t tk2 '#{pane_in_mode}'", expected: "1")
+            XCTAssertEqual(mode, "1")
+            let detachReady = expectation(description: "tmux detached back to the remote shell")
+            detached = detachReady
+            _ = try await connection.execute(command + " detach-client -s tk2")
+            await fulfillment(of: [detachReady], timeout: 4)
+        }
         connection.send(Data("exit\r".utf8))
         try await task.value
         FileHandle.standardError.write(Data("SSH_TEST_STAGE=first-connection-finished\n".utf8))
@@ -116,7 +156,7 @@ final class SSHIntegrationTests: XCTestCase {
         var rsaAuthenticated = false
         try await rsaConnection.run(profile: profile, credentials: SSHCredentials(privateKey: rsaPEM, passphrase: "rsa-passphrase"), cols: 80, rows: 24,
             verify: { _, key in XCTAssertEqual(key, hostPublic) },
-            onReady: { rsaAuthenticated = true; rsaConnection.send(Data("exit\r".utf8)) }, onData: { _ in })
+            onReady: { rsaAuthenticated = true; rsaConnection.send(Data("exit 7\r".utf8)) }, onData: { _ in })
         XCTAssertTrue(rsaAuthenticated)
 
         let jump = ConnectionProfile(name: "jump", host: "127.0.0.1", user: NSUserName(), port: port)
@@ -126,6 +166,18 @@ final class SSHIntegrationTests: XCTestCase {
             verify: { _, key in XCTAssertEqual(key, hostPublic) },
             onReady: { jumpAuthenticated = true; throughJump.send(Data("exit\r".utf8)) }, onData: { _ in })
         XCTAssertTrue(jumpAuthenticated)
+    }
+    @MainActor
+    private func waitForTmux(_ connection: SSHConnection, command: String, expected: String) async throws -> String {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(4)
+        var value = ""
+        while clock.now < deadline {
+            value = try await connection.execute(command).trimmingCharacters(in: .whitespacesAndNewlines)
+            if value == expected { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        return value
     }
     private func run(_ executable: String, _ arguments: [String]) throws {
         let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = arguments
