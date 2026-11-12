@@ -13,6 +13,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     @Published var directory = ""
     @Published var statusMessage = ""
     @Published var logging = false
+    @Published private(set) var selectingText = false
     @Published var uploadProgress: Double?
     @Published var recoveredDraft = ""
     @Published var draft = DisconnectedDraft()
@@ -50,7 +51,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         terminal.accessibilityIdentifier = "terminalSurface"
         terminal.optionAsMetaKey = true
         terminal.returnByteSequence = [13]
-        terminal.linkReporting = .implicit
+        terminal.linkReporting = .explicit
+        terminal.linkHighlightMode = .always
         terminal.inputAccessoryView = TerminalAccessoryBar(session: self)
         applyAppearance(store.configuration.appearance)
         #if DEBUG
@@ -157,12 +159,6 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
               let profile = store?.configuration.profiles.first(where: { $0.id == profileID }) else { return }
         connectionTask?.cancel(); state = .idle; connect(profile)
     }
-    func suspendConnection() {
-        guard state == .connected else { return }
-        connectionTask?.cancel(); state = .waiting
-        statusMessage = "アプリに戻ると再接続します。"
-        Task { await connection.close() }
-    }
     func stop() {
         userClosed = true; connectionTask?.cancel(); localTask?.cancel(); credentials = nil; authenticatedProfile = nil
         resetInput(); log.stop(); logging = false; state = .closed
@@ -187,11 +183,22 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         else if let image = UIPasteboard.general.image, let data = image.pngData(), let store {
             let url = store.support.appendingPathComponent("paste-\(UUID().uuidString).png")
             do { try data.write(to: url, options: [.atomic, .completeFileProtection]); upload([url]) } catch { store.error = error.localizedDescription }
-        } else if let urls = UIPasteboard.general.urls { upload(urls) }
+        } else if let urls = UIPasteboard.general.urls, !urls.isEmpty { upload(urls) }
     }
     func sendKey(_ key: SpecialKey, modifiers: Modifiers = []) {
         let applicationCursor = terminal.terminalInputStateSnapshot()?.applicationCursor ?? false
         send(Data(KeyEncoder.special(key, modifiers: modifiers, applicationCursor: applicationCursor).utf8))
+    }
+    func toggleTextSelection() {
+        selectingText.toggle()
+        terminal.allowMouseReporting = !selectingText
+        terminal.linkHighlightMode = selectingText ? .alwaysWithModifier : .always
+        if !selectingText { terminal.clearSelection() }
+    }
+    func sendKeySequence(_ keys: String) {
+        guard state == .connected,
+              let text = KeySequence.encode(keys, applicationCursor: terminal.terminalInputStateSnapshot()?.applicationCursor ?? false) else { return }
+        send(Data(text.utf8))
     }
     func toggleLog() {
         if logging { log.stop(); logging = false }
@@ -234,8 +241,8 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
         case "paste": pasteClipboard()
         case "copy": terminal.copy(nil)
         case "search": terminal.onSearch?()
-        case "fontLarger": store.configuration.appearance.fontSize = min(32, store.configuration.appearance.fontSize + 1)
-        case "fontSmaller": store.configuration.appearance.fontSize = max(10, store.configuration.appearance.fontSize - 1)
+        case "fontLarger": store.configuration.appearance.fontSize = min(Appearance.fontSizes.upperBound, store.configuration.appearance.fontSize + 1)
+        case "fontSmaller": store.configuration.appearance.fontSize = max(Appearance.fontSizes.lowerBound, store.configuration.appearance.fontSize - 1)
         case "fontReset": store.configuration.appearance.fontSize = 14
         case "logging": toggleLog()
         case "upload": terminal.onUpload?()
@@ -257,7 +264,7 @@ final class TerminalSession: NSObject, ObservableObject, Identifiable, TerminalV
     func scrolled(source: TerminalView, position: Double) {}
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
     func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
-        guard let url = URL(string: link), ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return }
+        guard let url = TerminalWebLink.safeURL(link) else { return }
         UIApplication.shared.open(url)
     }
     func clipboardCopy(source: TerminalView, content: Data) {

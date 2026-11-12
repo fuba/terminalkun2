@@ -19,6 +19,12 @@ The channel multiplexer accepts `auth-agent@openssh.com` and the PTY channel can
 
 The handshake timeout follows the configured authentication timeout (120 seconds by default), allowing time for the native fingerprint confirmation sheet. Server PTY output continuations are finished when a channel becomes inactive. The app handles Citadel's second close after normal PTY EOF without hiding other transport errors.
 
+## SSH transport keepalive and PTY exit
+
+The client sends `keepalive@openssh.com` as a global SSH request on the SSH event loop. Both request-success and request-failure confirm transport liveness. The probe uses the existing ordered global-reply queue and does not consume a session channel. Citadel bounds the reply wait. TerminalTransport issues one probe at a time and reconnects after transport failure.
+
+An interactive PTY can return a nonzero exit status after the user exits the shell. Citadel keeps that as a normal end for PTY streams and preserves the nonzero exit error for independent exec commands.
+
 ## Verification
 
 `Tests/TerminalTransportTests` connects to an actual, temporary OpenSSH server. It exercises encrypted Ed25519 and RSA keys, strict host validation, Japanese input interleaved with resize events, SFTP file contents and quoted paths, and a nested OpenSSH connection using the forwarded agent. UI tests use a separate real PTY fixture on loopback. No server or fixture is shipped in the iPhone app.

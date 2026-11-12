@@ -63,6 +63,7 @@ public struct UserWord: Codable, Identifiable, Equatable, Sendable {
 }
 
 public struct Appearance: Codable, Equatable, Sendable {
+    public static let fontSizes = 6.0...32.0
     public var theme = "Carbon"
     public var fontSize = 14.0
     public var fontName = ""
@@ -87,16 +88,21 @@ public struct AppConfiguration: Codable, Sendable {
     public var aiEndpoint = ""
     public var aiModel = ""
     public var sshConfigBookmark: Data?
+    public var keySequences: [KeySequence]?
+    public var effectiveKeySequences: [KeySequence] { keySequences ?? KeySequence.defaults }
     public init() {}
     public func validate() throws {
-        guard version == 1, appearance.fontSize.isFinite, (10...32).contains(appearance.fontSize),
+        guard version == 1, appearance.fontSize.isFinite, Appearance.fontSizes.contains(appearance.fontSize),
               appearance.opacity.isFinite, (0.35...1).contains(appearance.opacity),
               (1000...50000).contains(appearance.scrollback),
               Set(profiles.map(\.id)).count == profiles.count,
               Set(keys.map(\.id)).count == keys.count,
               Set(sessions.map(\.id)).count == sessions.count,
               Set(dictionary.map(\.id)).count == dictionary.count,
-              Set(shortcuts.map(\.action)).count == shortcuts.count else {
+              Set(shortcuts.map(\.action)).count == shortcuts.count,
+              effectiveKeySequences.count <= KeySequence.maximumCount,
+              Set(effectiveKeySequences.map(\.id)).count == effectiveKeySequences.count,
+              effectiveKeySequences.allSatisfy(\.isValid) else {
             throw AppError.message("設定の版、表示範囲、または重複する ID を確認してください。")
         }
     }

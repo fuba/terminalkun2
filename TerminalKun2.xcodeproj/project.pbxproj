@@ -22,6 +22,7 @@
 		4148EA51326F4725A5B14BBD /* KeyListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB050C70D49B09ADD96E5DA /* KeyListView.swift */; };
 		4513EB73A883CD2493FB714E /* Prompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */; };
 		5AC416E3DCAE817C5BA8B7AC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */; };
+		6350B789C90C666CCDE0DD9B /* KeySequenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379C93ECD9D620B2515E642E /* KeySequenceSettingsView.swift */; };
 		642ED0989DA3FD43E0B72B63 /* TerminalKun2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00447403DAB03D130456273E /* TerminalKun2App.swift */; };
 		7025BCCB8D57E0577C827451 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */; };
 		772D3B4B7CFD0C15D08FD853 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3F51960D5ADF33F45DF1ED /* TerminalSession.swift */; };
@@ -37,6 +38,7 @@
 		CA1A2E14751ABD480110BD0D /* QRImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED3ECCE8422E9EC50E3891C2 /* QRImageTests.swift */; };
 		CC6F9141BBB2AC43248CABEB /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */; };
 		E079FE1AEB15C80A813609E4 /* PresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E55C85640D36423C7DD9AAE /* PresentationTests.swift */; };
+		E88A252FDC3CED35E3CB78BB /* TailscaleHelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D839EA2FC3CFBC47FD9D52CF /* TailscaleHelpView.swift */; };
 		E987D08DE334A673548A801C /* Mark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 5E5E8C8C22F723E84FA35E9F /* Mark.svg */; };
 		EB790067DEF1668EE312A73E /* VoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5F4951B81F7E554387B5E /* VoiceView.swift */; };
 		F6D41856A8B68C323DBD4383 /* TerminalKun2UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64383E950DA8640375F1A18 /* TerminalKun2UITests.swift */; };
@@ -68,6 +70,7 @@
 		26AAEB0193E86201779C3093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramKeyboard.swift; sourceTree = "<group>"; };
 		3602750A69E13FEFA9585EDD /* TerminalKun2UITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TerminalKun2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		379C93ECD9D620B2515E642E /* KeySequenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeySequenceSettingsView.swift; sourceTree = "<group>"; };
 		3C0A02F3DC9BF75CA55CCB6A /* QRKeyImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRKeyImportView.swift; sourceTree = "<group>"; };
 		40CDB75C1A8730C58C45FACD /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
 		42AEF36D6EF139720A1B6949 /* Simulator.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Simulator.entitlements; sourceTree = "<group>"; };
@@ -87,6 +90,7 @@
 		D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prompts.swift; sourceTree = "<group>"; };
 		D5DB6358A14396E6F11A1FC1 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		D7BAF07C89E9703604DCBDF4 /* ConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionsView.swift; sourceTree = "<group>"; };
+		D839EA2FC3CFBC47FD9D52CF /* TailscaleHelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailscaleHelpView.swift; sourceTree = "<group>"; };
 		DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DD1DAEFC456A8175CB424471 /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		E131C182AF7F65F1EF9D39DF /* ThirdPartyNotices.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ThirdPartyNotices.txt; sourceTree = "<group>"; };
@@ -189,6 +193,7 @@
 				45B29891A3B38A7467FAA4C7 /* DictionaryView.swift */,
 				7C07E007ECD43AE302D366BF /* HelpView.swift */,
 				CBB050C70D49B09ADD96E5DA /* KeyListView.swift */,
+				379C93ECD9D620B2515E642E /* KeySequenceSettingsView.swift */,
 				356B8B3E6B6E3446E60A2451 /* ProgramKeyboard.swift */,
 				D2BF4FDBB9E5F81699D684E2 /* Prompts.swift */,
 				3C0A02F3DC9BF75CA55CCB6A /* QRKeyImportView.swift */,
@@ -196,6 +201,7 @@
 				00534E178461582FC03C1110 /* SessionTerminalView.swift */,
 				DA2F552F622CF37DDB71E5C0 /* SettingsView.swift */,
 				42AEF36D6EF139720A1B6949 /* Simulator.entitlements */,
+				D839EA2FC3CFBC47FD9D52CF /* TailscaleHelpView.swift */,
 				6C394576BE2EF655F4709EF2 /* TailscaleView.swift */,
 				15C9B64C6A300DFAC4A4202B /* TerminalContainerView.swift */,
 				00447403DAB03D130456273E /* TerminalKun2App.swift */,
@@ -362,12 +368,14 @@
 				A13A9C60360EB50C72FD4C6B /* DictionaryView.swift in Sources */,
 				27CD6B0A63AEA44C57C2E257 /* HelpView.swift in Sources */,
 				4148EA51326F4725A5B14BBD /* KeyListView.swift in Sources */,
+				6350B789C90C666CCDE0DD9B /* KeySequenceSettingsView.swift in Sources */,
 				1D237B1EA422F7B89A38E41B /* ProgramKeyboard.swift in Sources */,
 				4513EB73A883CD2493FB714E /* Prompts.swift in Sources */,
 				20A23F36B387CF4CE2DF04B1 /* QRKeyImportView.swift in Sources */,
 				8A2444856EBDBB91DD7E01C8 /* SecureStore.swift in Sources */,
 				31B2AA91DC95AAB6CBB577EF /* SessionTerminalView.swift in Sources */,
 				5AC416E3DCAE817C5BA8B7AC /* SettingsView.swift in Sources */,
+				E88A252FDC3CED35E3CB78BB /* TailscaleHelpView.swift in Sources */,
 				B66B67A0F77E2E5424FA03A5 /* TailscaleView.swift in Sources */,
 				06563649987E3828B52F5E08 /* TerminalContainerView.swift in Sources */,
 				642ED0989DA3FD43E0B72B63 /* TerminalKun2App.swift in Sources */,

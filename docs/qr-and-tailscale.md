@@ -12,11 +12,21 @@
 
 送信側の機能は別リポジトリの Issue に依頼した段階。本アプリの読み取り実装と、完成した両デスクトップアプリからの実機カメラでの相互運用完了は区別する。
 
+## Tailscale 経由で SSH に接続
+
+1. iPhone の公式 Tailscale アプリで接続先と同じ Tailnet にサインインし、VPN 構成を許可して接続をオンにする。
+2. 接続先も同じ Tailnet に参加させ、OpenSSH などの SSH サーバーを起動する。macOS では「システム設定 → 一般 → 共有 → リモートログイン」。Tailnet のアクセスルールと接続先のファイアウォールで、iPhone から SSH ポート（通常 22）への接続を許可する。
+3. terminalkun2 の「接続先 → ＋」で、接続先の Tailscale IP（例 `100.64.0.10`）か MagicDNS 名、接続先 OS のユーザー名、SSH ポート、認証鍵を指定する。初回接続時は接続先のホスト鍵指紋と照合する。
+
+接続先が分かっていればここまでで使える。端末一覧から選ぶときだけ、次の OAuth 設定を行う。アプリ内では「接続先 → Tailscale の端末 → Tailscale の接続手順」または「使い方」から開ける。
+
+[公式 iOS 接続手順](https://tailscale.com/docs/install/ios) · [Tailscale 経由の SSH](https://tailscale.com/docs/reference/ssh-over-tailscale)
+
 ## Tailscale の端末一覧
 
 接続先 → Tailscale の端末。通信は、利用者が iPhone の公式 Tailscale アプリで同じ Tailnet に接続した状態で行う。terminalkun2 自身を新しい VPN ノードとして登録する構成ではない。
 
-Tailscale 管理画面の Settings → Trust credentials で OAuth credential を作り、Devices → Core → Read (`devices:core:read`) だけを選ぶ。terminalkun2 に Client ID と Client secret を入力し、「接続して保存」。Tailnet は通常 `-` のままでよい。資格情報は端末内の device-only Keychain に保存する。OAuth アクセストークンは取得ごとに交換し、永続化しない。期限付きアクセストークンの直接入力にも対応する。
+[Trust credentials](https://console.tailscale.com/admin/settings/trust-credentials) の「Credential → OAuth」で、Devices → Core の Read (`devices:core:read`) だけを選択し、生成する。生成画面を閉じる前に Client ID と Client secret を控える。secret は後から再表示できない。terminalkun2 に両方を入力し、「接続して保存」。Tailnet は通常 `-` のままでよい。資格情報は端末内の device-only Keychain に保存する。OAuth アクセストークンは取得ごとに交換し、永続化しない。期限付きアクセストークンの直接入力にも対応する。
 
 端末一覧は固定の `https://api.tailscale.com/api/v2/tailnet/:tailnet/devices` から取得する。接続状態は API の `connectedToControl` を使い、欠落時は「状態不明」とする。オンラインは制御サーバーへの接続状態であり、SSH ポートの到達性を保証しない。再読み込み・pull to refresh・前面復帰で更新でき、取得失敗時は直前の表示と更新時刻を残してエラーを表示する。応答は 4 MiB / 10,000 端末まで。IP アドレス、ID の重複、ホスト入力を検査する。
 
@@ -25,5 +35,16 @@ Tailscale 管理画面の Settings → Trust credentials で OAuth credential �
 「連携を解除」は API 資格情報をこの端末から削除する。公式 Tailscale アプリや保存済み SSH 接続先は変更しない。
 
 API 資格情報は公式 HTTPS ホストだけへ送信し、HTTP リダイレクト、cookie、URL cache、credential storage を無効にする。シークレットを URL・設定 JSON・ログへ入れない。API 操作は OAuth トークン交換と端末一覧取得のみ。端末・鍵・ACL の管理操作は実装しない。
+
+## 接続できないとき
+
+| 症状 | 確認する場所 |
+| --- | --- |
+| 端末一覧が 401 / 403 | OAuth の ID・secret、読み取り権限、対象 Tailnet。secret を失くしたら管理画面で再発行し、アプリの「API 資格情報を変更」で差し替える |
+| 一覧にあるが SSH がタイムアウト | iPhone の VPN 接続と承認、Tailnet のアクセスルール、接続先の SSH ポートとファイアウォール。MagicDNS 名の代わりに Tailscale IP で確認する |
+| SSH 認証が通らない | 接続先 OS のユーザー名と認証鍵、サーバーの設定。Tailscale SSH の check モードの再認証はアプリ内で未対応 |
+| ホスト鍵が変わった | サーバー管理者に実際の鍵と変更理由を確認してから、アプリの信頼情報を見直す |
+
+[公式 OAuth の作成手順](https://tailscale.com/docs/features/oauth-clients) · [Trust credential scopes](https://tailscale.com/docs/reference/trust-credentials) · [Tailscale SSH の認証方式](https://tailscale.com/docs/features/tailscale-ssh)
 
 根拠: [公式 OAuth / trust credential scopes](https://tailscale.com/docs/reference/trust-credentials)、[Devices API の接続状態追加](https://tailscale.com/changelog#oct-8-2025)、[公式 iOS 接続手順](https://tailscale.com/docs/install/ios)。単調時計による QR の経過時間計測を [Apple の 35F9.1](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitypereasons) として PrivacyInfo に申告する。時計情報を送信しない。

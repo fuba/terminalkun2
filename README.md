@@ -17,6 +17,10 @@
 
 フリックの数字・記号、取消、VoiceOver 操作は [日本語フリック](docs/japanese-flick.md) を参照。
 
+端末下部のテキスト選択ボタンから、長押しやダブルタップで文字を選べます。http / https のリンクはタップで開きます。キーボード上部の「キー」から tmux / screen のコピーモードを呼び出せます。よく使うキー列は「設定 → キー列」で追加できます。[端末操作と接続維持](docs/terminal-controls.md)
+
+Tailscale 経由の SSH は、公式 iPhone アプリの VPN に接続し、Tailscale IP か MagicDNS 名を通常の接続先に登録します。端末一覧を表示する場合は読み取り専用 OAuth を設定します。[Tailscale の接続手順](docs/qr-and-tailscale.md#tailscale-経由で-ssh-に接続)
+
 SSH agent 転送は接続先ごとに明示的に有効にできます。選択した鍵だけを公開し、アプリが前面にある間だけ署名します。ハードウェア保護鍵には iPhone の Secure Enclave を使います。**外付け FIDO2 / `sk-*` 鍵は未対応です。**
 
 コマンド生成には Ollama の URL、または OpenAI 互換の `/v1` URL とモデル名を設定します。依頼文だけを送信し、応答を確認してから入力欄へ挿入します。自動実行はしません。

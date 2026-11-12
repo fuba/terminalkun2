@@ -77,3 +77,33 @@ final class FlickKeyboardTests: XCTestCase {
         XCTAssertTrue(session.draft.text.isEmpty)
     }
 }
+
+extension FlickKeyboardTests {
+    func testJapaneseReturnSpansTwoRowsAndEnglishPreviewFollowsPress() throws {
+        let (session, keyboard, _) = makeKeyboard(Self.store)
+        let enter = try key("enter", in: keyboard)
+        XCTAssertGreaterThan(enter.height, try key("kana-ra", in: keyboard).height * 1.8)
+        let elements = try XCTUnwrap(keyboard.accessibilityElements as? [UIAccessibilityElement])
+        XCTAssertFalse(elements.contains { $0.accessibilityIdentifier == "program-key-hide" })
+
+        keyboard.handle("language"); keyboard.layoutIfNeeded()
+        keyboard.handle("shift")
+        let a = try key("a", in: keyboard)
+        let finger = NSObject(), id = ObjectIdentifier(finger)
+        keyboard.beginPress(id, at: CGPoint(x: a.midX, y: a.midY))
+        let preview = try XCTUnwrap(keyboard.subviews.first { $0.accessibilityIdentifier == "program-key-preview" } as? UILabel)
+        XCTAssertEqual(session.draft.text, "A")
+        XCTAssertEqual(preview.text, "A")
+        XCTAssertFalse(preview.isHidden)
+        XCTAssertLessThan(preview.frame.midY, a.midY)
+        keyboard.endPress(id, cancelled: false)
+        XCTAssertTrue(preview.isHidden)
+        keyboard.handle("sequences"); keyboard.layoutIfNeeded()
+        XCTAssertTrue(keyboard.showingSequences)
+        for sequence in Self.store.configuration.effectiveKeySequences {
+            XCTAssertNoThrow(try key("sequence-" + sequence.id.uuidString, in: keyboard))
+        }
+        keyboard.handle("sequences")
+        XCTAssertFalse(keyboard.showingSequences)
+    }
+}

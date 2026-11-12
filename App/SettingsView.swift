@@ -13,7 +13,7 @@ struct SettingsView: View {
             Form {
                 Section("表示") {
                     Picker("配色", selection: $store.configuration.appearance.theme) { ForEach(TerminalPalette.names, id: \.self) { Text($0) } }
-                    HStack { Text("文字サイズ"); Slider(value: $store.configuration.appearance.fontSize, in: 10...32, step: 1); Text(Int(store.configuration.appearance.fontSize).description).monospacedDigit().frame(width: 26) }
+                    HStack { Text("文字サイズ"); Slider(value: $store.configuration.appearance.fontSize, in: Appearance.fontSizes, step: 1); Text(Int(store.configuration.appearance.fontSize).description).monospacedDigit().frame(width: 26) }
                     HStack { Text("背景の不透明度"); Slider(value: $store.configuration.appearance.opacity, in: 0.35...1); Text("\(Int(store.configuration.appearance.opacity * 100))%").monospacedDigit() }
                     Stepper("スクロール履歴 \(store.configuration.appearance.scrollback) 行", value: $store.configuration.appearance.scrollback, in: 1000...50000, step: 1000)
                     Button(store.configuration.appearance.fontName.isEmpty ? "フォントを取り込む" : "フォント: " + store.configuration.appearance.fontName) { importFont = true }
@@ -26,6 +26,7 @@ struct SettingsView: View {
                         .accessibilityValue(store.configuration.appearance.customKeyboard ? "オン" : "オフ")
                     NavigationLink("ユーザー辞書") { DictionaryView(embedded: true) }
                     NavigationLink("キー割り当て") { ShortcutSettingsView() }
+                    NavigationLink("キー列") { KeySequenceSettingsView() }
                 }
                 Section("SSH") {
                     Toggle("通信断から自動再接続", isOn: $store.configuration.appearance.autoReconnect)

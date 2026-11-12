@@ -200,15 +200,11 @@ final class AppStore: ObservableObject {
         if phase == .background {
             snapshot(); sessions.forEach { $0.resetInput() }
             if sessions.contains(where: { $0.state == .connected }), backgroundTask == .invalid {
-                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish SSH writes") { [weak self] in Task { @MainActor in self?.expireBackgroundTask() } }
+                backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish SSH writes") { [weak self] in Task { @MainActor in self?.endBackgroundTask() } }
             }
         } else if phase == .active {
             endBackgroundTask(); syncSSHConfig(); sessions.filter { $0.state == .waiting }.forEach { $0.retryNow() }
         }
-    }
-    private func expireBackgroundTask() {
-        sessions.forEach { $0.suspendConnection() }
-        endBackgroundTask()
     }
     private func endBackgroundTask() { if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid } }
     func open(_ url: URL) {

@@ -286,6 +286,9 @@ extension SSHClient {
                 self.logger.debug("EOF triggered, ending the command stream.")
                 if let error {
                     streamContinuation.finish(throwing: error)
+                } else if case .pty = mode {
+                    // Exiting an interactive shell with a nonzero status still ends the session normally.
+                    streamContinuation.finish()
                 } else if let exitCode = exitCode.withLockedValue({ $0 }), exitCode != 0 {
                     streamContinuation.finish(throwing: CommandFailed(exitCode: exitCode))
                 } else {

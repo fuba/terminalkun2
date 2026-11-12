@@ -4,18 +4,30 @@ import TerminalCore
 import TerminalRenderer
 
 @MainActor
-final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
+final class SessionTerminalView: TerminalView, UIDropInteractionDelegate, UIGestureRecognizerDelegate {
     weak var compositionContainer: TerminalContainerView?
     weak var session: TerminalSession?
     var onSearch: (() -> Void)?
     var onUpload: (() -> Void)?
+    private lazy var webTap = UITapGestureRecognizer(target: self, action: #selector(openWebLink(_:)))
+    private var tappedLink: URL?
     override init(frame: CGRect, font: UIFont? = nil, options: TerminalOptions) {
         super.init(frame: frame, font: font, options: options)
         addInteraction(UIDropInteraction(delegate: self))
+        // Keep the terminal's own double/triple taps for selection.
+        let existingTaps = (gestureRecognizers ?? []).compactMap { $0 as? UITapGestureRecognizer }
+        webTap.delegate = self
+        addGestureRecognizer(webTap)
+        for tap in existingTaps {
+            if tap.numberOfTapsRequired == 1 { tap.require(toFail: webTap) }
+            else { webTap.require(toFail: tap) }
+        }
         for direction: UISwipeGestureRecognizer.Direction in [.left, .right] {
             let single = UISwipeGestureRecognizer(target: self, action: #selector(oneFingerSwipe(_:)))
+            single.delegate = self
             single.direction = direction; single.numberOfTouchesRequired = 1; addGestureRecognizer(single)
             let double = UISwipeGestureRecognizer(target: self, action: #selector(twoFingerSwipe(_:)))
+            double.delegate = self
             double.direction = direction; double.numberOfTouchesRequired = 2; addGestureRecognizer(double)
             single.require(toFail: double)
         }
@@ -54,6 +66,29 @@ final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
         }
         super.pressesBegan(presses, with: event)
     }
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === webTap {
+            tappedLink = nil
+            guard session?.selectingText != true, !selectionActive else { return false }
+            tappedLink = webLink(at: gestureRecognizer.location(in: self))
+            return tappedLink != nil
+        }
+        if gestureRecognizer is UISwipeGestureRecognizer, session?.selectingText == true || selectionActive { return false }
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
+    func webLink(at point: CGPoint) -> URL? {
+        let size = caretFrame.size
+        guard size.width > 0, size.height > 0, bounds.contains(point),
+              let snapshot = terminalContentSnapshot(region: .viewport) else { return nil }
+        let col = Int(point.x / size.width)
+        let row = accessibilityLineNumber(for: point) - accessibilityLineNumber(for: contentOffset)
+        return TerminalWebLink.at(row: row, col: col, rows: snapshot.rows)
+    }
+    @objc private func openWebLink(_ gesture: UITapGestureRecognizer) {
+        defer { tappedLink = nil }
+        guard gesture.state == .ended, let tappedLink else { return }
+        terminalDelegate?.requestOpenLink(source: self, link: tappedLink.absoluteString, params: [:])
+    }
     @objc private func oneFingerSwipe(_ gesture: UISwipeGestureRecognizer) {
         guard session?.state == .connected else { return }
         session?.tmuxWindow(gesture.direction == .left)
@@ -65,7 +100,8 @@ final class SessionTerminalView: TerminalView, UIDropInteractionDelegate {
     @objc private func twoFingerSwipe(_ gesture: UISwipeGestureRecognizer) { session?.store?.nextTab(gesture.direction == .left ? 1 : -1) }
     @objc private func pinch(_ gesture: UIPinchGestureRecognizer) {
         if gesture.state == .ended, let store = session?.store {
-            store.configuration.appearance.fontSize = max(10, min(32, (store.configuration.appearance.fontSize * gesture.scale).rounded()))
+            let range = Appearance.fontSizes
+            store.configuration.appearance.fontSize = max(range.lowerBound, min(range.upperBound, (store.configuration.appearance.fontSize * gesture.scale).rounded()))
         }
     }
     func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
